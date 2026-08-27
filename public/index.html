@@ -3,12 +3,13 @@
 <head>
 <meta charset="utf-8"/>
 <meta name="viewport" content="width=device-width,initial-scale=1"/>
-<title>INC Roulette</title>
+<title>INC ROULETTE</title>
 <link rel="stylesheet" href="/style.css"/>
 </head>
 
 <body>
 
+<div class="casino-lines"></div>
 <div class="bg-orb orb1"></div>
 <div class="bg-orb orb2"></div>
 
@@ -22,11 +23,20 @@
     </div>
   </div>
 
-  <div id="roomBadge" class="room-badge hidden">
-    ROOM <strong id="roomCode"></strong>
+  <div class="top-actions">
+
+    <button id="soundBtn" class="sound-btn">
+      🔇 SOUND OFF
+    </button>
+
+    <div id="roomBadge" class="room-badge hidden">
+      ROOM <strong id="roomCode"></strong>
+    </div>
+
   </div>
 
 </header>
+
 
 <main>
 
@@ -36,6 +46,12 @@
 
   <div class="hero-card">
 
+    <div class="casino-sign">
+      <span>♠</span>
+      INC
+      <span>♣</span>
+    </div>
+
     <div class="eyebrow">
       THE CORPORATE CLUB PRESENTS
     </div>
@@ -44,10 +60,12 @@
       INC <em>ROULETTE</em>
     </h1>
 
+    <div class="gold-line"></div>
+
     <p>
-      Pick a president. Place your virtual chips. Spin the wheel.
-      <br/>
-      No money. Just chaos.
+      Pick a president. Place your virtual chips.
+      Spin the wheel.<br/>
+      <strong>No money. Just chaos.</strong>
     </p>
 
     <div class="join-grid">
@@ -73,7 +91,6 @@
     </div>
 
     <div class="actions">
-
       <button id="create" class="primary">
         CREATE ROOM
       </button>
@@ -81,15 +98,15 @@
       <button id="join" class="secondary">
         JOIN ROOM
       </button>
-
     </div>
 
     <div id="landingError" class="error"></div>
 
     <div class="rules">
-      <span>👥 1–5 players</span>
-      <span>🪙 1,000 starting chips</span>
-      <span>🎰 11 wheel slots</span>
+      <span>👥 1–5 PLAYERS</span>
+      <span>🪙 1,000 STARTING CHIPS</span>
+      <span>🎰 11 PRESIDENTS</span>
+      <span>🔴⚫ RED / BLACK</span>
     </div>
 
   </div>
@@ -104,38 +121,33 @@
   <div class="lobby-card">
 
     <div class="eyebrow">
-      ROOM READY
+      TABLE READY
     </div>
 
     <h2>
       Invite the squad.
     </h2>
 
+    <div class="casino-divider">
+      <span>♦</span>
+      <i></i>
+      <span>♦</span>
+    </div>
+
     <div class="code-big" id="lobbyCode">
       -----
     </div>
 
-    <button
-      class="secondary small"
-      id="copyCode"
-    >
+    <button class="secondary small" id="copyCode">
       COPY ROOM CODE
     </button>
 
-    <div
-      class="players"
-      id="lobbyPlayers"
-    ></div>
+    <div class="players" id="lobbyPlayers"></div>
 
     <div class="lobby-actions">
-
-      <button
-        id="enterGame"
-        class="primary"
-      >
+      <button id="enterGame" class="primary">
         ENTER ROULETTE →
       </button>
-
     </div>
 
   </div>
@@ -150,15 +162,13 @@
   <div class="game-head">
 
     <div>
-
       <div class="eyebrow">
-        LIVE ROOM
+        🔴 LIVE CASINO TABLE ⚫
       </div>
 
       <h2>
         Place your bets.
       </h2>
-
     </div>
 
     <div class="round">
@@ -169,7 +179,6 @@
 
 
   <div class="game-layout">
-
 
     <!-- PLAYERS -->
 
@@ -200,46 +209,37 @@
     <section class="wheel-panel">
 
       <div class="wheel-title">
-        <span>♠</span>
-        PRESIDENTS' ROULETTE
-        <span>♠</span>
+        <span>♦</span>
+        INC PRESIDENTIAL ROULETTE
+        <span>♦</span>
       </div>
 
       <div class="wheel-wrap">
 
-        <div class="pointer"></div>
+        <div class="pointer">
+          ♦
+        </div>
 
-        <div
-          id="wheel"
-          class="wheel"
-        ></div>
+        <div id="wheel" class="wheel"></div>
 
         <div class="wheel-center">
 
           <img src="/assets/inc-logo.png"/>
 
-          <span>
-            INC
-          </span>
+          <span>INC</span>
 
         </div>
 
       </div>
 
-      <div
-        id="result"
-        class="result"
-      >
+      <div id="result" class="result">
         Choose a president to bet on.
       </div>
 
       <div class="spin-row">
 
-        <button
-          id="spin"
-          class="spin"
-        >
-          SPIN THE ROULETTE
+        <button id="spin" class="spin">
+          🎰 SPIN THE ROULETTE
         </button>
 
       </div>
@@ -247,15 +247,13 @@
     </section>
 
 
-    <!-- BET PANEL -->
+    <!-- BETTING -->
 
     <aside class="panel bet-panel">
 
       <div class="balance">
 
-        <span>
-          YOUR CHIPS
-        </span>
+        <span>YOUR CHIPS</span>
 
         <strong id="balance">
           1,000
@@ -263,14 +261,58 @@
 
       </div>
 
+
       <h3>
-        BET ON A PRESIDENT
+        PLACE YOUR BET
       </h3>
+
+
+      <!-- RED BLACK -->
+
+      <div class="colour-bets">
+
+        <button
+          id="redBet"
+          class="colour-option red-bet"
+          data-bet="RED"
+        >
+          <div class="colour-symbol">♦</div>
+
+          <div>
+            <b>RED</b>
+            <small>2× PAYOUT</small>
+          </div>
+
+        </button>
+
+
+        <button
+          id="blackBet"
+          class="colour-option black-bet"
+          data-bet="BLACK"
+        >
+          <div class="colour-symbol">♠</div>
+
+          <div>
+            <b>BLACK</b>
+            <small>2× PAYOUT</small>
+          </div>
+
+        </button>
+
+      </div>
+
+
+      <div class="bet-divider">
+        <span>OR BET ON A PRESIDENT</span>
+      </div>
+
 
       <div
         id="betOptions"
-        class="bet-options"
-      ></div>
+        class="bet-options">
+      </div>
+
 
       <div class="bet-controls">
 
@@ -284,19 +326,18 @@
 
         <button
           id="betBtn"
-          class="primary small"
-        >
+          class="primary small">
           PLACE BET
         </button>
 
         <button
           id="clearBtn"
-          class="ghost small"
-        >
+          class="ghost small">
           CLEAR
         </button>
 
       </div>
+
 
       <div class="bet-slip">
 
@@ -311,7 +352,7 @@
       </div>
 
       <p class="tiny">
-        Winning bets pay at 11× including your original stake.
+        Choose a president or RED / BLACK before placing your chips.
       </p>
 
     </aside>
@@ -322,7 +363,9 @@
 
 </main>
 
+
 <div id="toast"></div>
+
 
 <script src="/socket.io/socket.io.js"></script>
 <script src="/app.js"></script>
