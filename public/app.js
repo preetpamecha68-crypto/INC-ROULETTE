@@ -1,5 +1,10 @@
 const socket = io();
 
+
+/* =========================
+   PRESIDENTS
+========================= */
+
 const entries = [
   'Arya',
   'Avyukt',
@@ -13,6 +18,7 @@ const entries = [
   'Tamanna',
   'WILD CARD'
 ];
+
 
 const imgs = {
   Arya:'Arya.jpeg',
@@ -28,17 +34,23 @@ const imgs = {
   'WILD CARD':'Wildcard.jpeg'
 };
 
+
+/* =========================
+   GAME STATE
+========================= */
+
 let me = null;
 let room = null;
 let selected = null;
 let rotation = 0;
 
-const $ = id => document.getElementById(id);
-
 
 /* =========================
-   SCREEN MANAGEMENT
+   HELPERS
 ========================= */
+
+const $ = id => document.getElementById(id);
+
 
 function show(id){
 
@@ -47,21 +59,16 @@ function show(id){
     .forEach(x => x.classList.remove('active'));
 
   $(id).classList.add('active');
+
 }
 
-
-/* =========================
-   ERRORS
-========================= */
 
 function err(t){
+
   $('landingError').textContent = t || '';
+
 }
 
-
-/* =========================
-   TOAST
-========================= */
 
 function toast(t){
 
@@ -75,12 +82,9 @@ function toast(t){
     () => x.classList.remove('show'),
     2200
   );
+
 }
 
-
-/* =========================
-   ROOM
-========================= */
 
 function setRoom(code){
 
@@ -89,6 +93,7 @@ function setRoom(code){
   $('roomBadge').classList.remove('hidden');
 
   $('lobbyCode').textContent = code;
+
 }
 
 
@@ -99,6 +104,8 @@ function setRoom(code){
 function renderPlayers(target){
 
   target.innerHTML = '';
+
+  if(!room || !room.players) return;
 
   room.players.forEach(p => {
 
@@ -122,6 +129,7 @@ function renderPlayers(target){
     target.appendChild(d);
 
   });
+
 }
 
 
@@ -135,10 +143,12 @@ function renderLobby(){
 
 
 /* =========================
-   GAME
+   GAME RENDER
 ========================= */
 
 function renderGame(){
+
+  if(!room) return;
 
   $('count').textContent =
     `${room.players.length}/5`;
@@ -150,10 +160,12 @@ function renderGame(){
   $('roundNo').textContent =
     room.round || 1;
 
+
   const p =
     room.players.find(
       x => x.id === me?.id
     );
+
 
   if(p){
 
@@ -161,7 +173,7 @@ function renderGame(){
       p.balance.toLocaleString();
 
     const st =
-      Object.values(p.bets)
+      Object.values(p.bets || {})
       .reduce(
         (a,b) => a+b,
         0
@@ -169,76 +181,63 @@ function renderGame(){
 
     $('staked').textContent =
       st.toLocaleString();
+
   }
 
+
   $('history').innerHTML =
-    room.history
-      .map(
-        x =>
-          `<span class="history-item">${x}</span>`
-      )
-      .join('');
+    (room.history || [])
+    .map(
+      x =>
+        `<span class="history-item">${x}</span>`
+    )
+    .join('');
+
 
   $('spin').disabled =
     room.spinning ||
     !p?.host;
 
+
   $('spin').textContent =
     p?.host
       ? (
-          room.spinning
-            ? 'SPINNING…'
-            : 'SPIN THE ROULETTE'
-        )
+        room.spinning
+          ? 'SPINNING…'
+          : '🎰 SPIN THE ROULETTE'
+      )
       : 'WAIT FOR HOST';
+
 }
 
 
 /* =========================
-   BUILD ROULETTE
+   WHEEL
 ========================= */
 
 function buildWheel(){
 
-  const wheel = $('wheel');
+  const w = $('wheel');
 
-  wheel.innerHTML = '';
+  w.innerHTML = '';
 
-  const number =
-    entries.length;
+  const n = entries.length;
 
-  const step =
-    360 / number;
+  const step = 360 / n;
 
 
   entries.forEach(
-    (name,index) => {
+    (name,i) => {
 
-      const slice =
+      const s =
         document.createElement('div');
 
-      slice.className =
-        'slice';
+      s.className = 'slice';
 
 
-      /*
-        Position each person around
-        the roulette circle.
-      */
+      s.style.transform =
+        `rotate(${i*step}deg) skewY(${90-step}deg)`;
 
-      const angle =
-        index * step;
-
-
-      slice.style.transform =
-        `rotate(${angle}deg)`;
-
-
-      /*
-        RED / BLACK alternating
-        sectors are created behind
-        the faces.
-      */
 
       const inner =
         document.createElement('div');
@@ -247,30 +246,23 @@ function buildWheel(){
         'slice-inner';
 
 
-      /*
-        Keep the face upright.
-      */
-
       inner.style.transform =
-        `translateX(-50%) rotate(${-angle}deg)`;
+        `skewY(-${90-step}deg) rotate(${step/2}deg)`;
 
 
       inner.innerHTML = `
         <img
           src="/assets/${imgs[name]}"
           alt="${name}"
-          onerror="this.style.display='none'"
-        >
+        />
 
-        <b>
-          ${name}
-        </b>
+        <b>${name}</b>
       `;
 
 
-      slice.appendChild(inner);
+      s.appendChild(inner);
 
-      wheel.appendChild(slice);
+      w.appendChild(s);
 
     }
   );
@@ -282,64 +274,105 @@ function buildWheel(){
    BET OPTIONS
 ========================= */
 
-function buildBets(){
+function clearSelection(){
 
-  const container =
-    $('betOptions');
+  selected = null;
 
-  container.innerHTML = '';
-
-
-  entries.forEach(name => {
-
-    const button =
-      document.createElement('button');
-
-    button.className =
-      'bet-option';
-
-
-    button.innerHTML = `
-      <img
-        src="/assets/${imgs[name]}"
-        alt="${name}"
-      >
-
-      <span>
-        ${name}
-
-        <small>
-          11× payout
-        </small>
-      </span>
-    `;
-
-
-    button.onclick = () => {
-
-      selected = name;
-
-      document
-        .querySelectorAll('.bet-option')
-        .forEach(
-          x =>
-            x.classList.remove(
-              'selected'
-            )
-        );
-
-      button.classList.add(
-        'selected'
-      );
-
-    };
-
-
-    container.appendChild(button);
-
-  });
+  document
+    .querySelectorAll(
+      '.bet-option,.colour-option'
+    )
+    .forEach(
+      x =>
+        x.classList.remove('selected')
+    );
 
 }
+
+
+/* PRESIDENTS */
+
+function buildBets(){
+
+  const c =
+    $('betOptions');
+
+  c.innerHTML = '';
+
+
+  entries.forEach(
+    name => {
+
+      const b =
+        document.createElement('button');
+
+      b.className =
+        'bet-option';
+
+
+      b.innerHTML = `
+        <img
+          src="/assets/${imgs[name]}"
+          alt="${name}"
+        >
+
+        <span>
+          ${name}
+
+          <small>
+            11× PAYOUT
+          </small>
+        </span>
+      `;
+
+
+      b.onclick = () => {
+
+        clearSelection();
+
+        selected = name;
+
+        b.classList.add(
+          'selected'
+        );
+
+      };
+
+
+      c.appendChild(b);
+
+    }
+  );
+
+}
+
+
+/* =========================
+   RED / BLACK
+========================= */
+
+$('redBet').onclick = () => {
+
+  clearSelection();
+
+  selected = 'RED';
+
+  $('redBet')
+    .classList.add('selected');
+
+};
+
+
+$('blackBet').onclick = () => {
+
+  clearSelection();
+
+  selected = 'BLACK';
+
+  $('blackBet')
+    .classList.add('selected');
+
+};
 
 
 /* =========================
@@ -349,38 +382,36 @@ function buildBets(){
 $('create').onclick = () => {
 
   const name =
-    $('name').value.trim();
+    $('name')
+      .value
+      .trim();
 
   err('');
 
+
   if(!name){
 
-    err(
+    return err(
       'Please enter your name.'
     );
 
-    return;
   }
 
 
   socket.emit(
     'createRoom',
     {name},
-
     r => {
 
-      if(!r.ok){
+      if(!r.ok)
+        return err(r.error);
 
-        return err(
-          r.error
-        );
-
-      }
 
       me = {
         id:socket.id,
         name
       };
+
 
       setRoom(r.code);
 
@@ -399,7 +430,9 @@ $('create').onclick = () => {
 $('join').onclick = () => {
 
   const name =
-    $('name').value.trim();
+    $('name')
+      .value
+      .trim();
 
   const code =
     $('joinCode')
@@ -409,43 +442,36 @@ $('join').onclick = () => {
 
   err('');
 
-  if(!name){
 
-    err(
+  if(!name)
+    return err(
       'Please enter your name.'
     );
 
-    return;
-  }
 
-  if(!code){
-
-    err(
+  if(!code)
+    return err(
       'Please enter a room code.'
     );
-
-    return;
-  }
 
 
   socket.emit(
     'joinRoom',
-    {name,code},
-
+    {
+      name,
+      code
+    },
     r => {
 
-      if(!r.ok){
+      if(!r.ok)
+        return err(r.error);
 
-        return err(
-          r.error
-        );
-
-      }
 
       me = {
         id:socket.id,
         name
       };
+
 
       setRoom(r.code);
 
@@ -458,14 +484,16 @@ $('join').onclick = () => {
 
 
 /* =========================
-   COPY ROOM CODE
+   COPY ROOM
 ========================= */
 
 $('copyCode').onclick = () => {
 
-  navigator.clipboard?.writeText(
-    $('lobbyCode').textContent
-  );
+  navigator
+    .clipboard
+    ?.writeText(
+      $('lobbyCode').textContent
+    );
 
   toast(
     'Room code copied!'
@@ -496,7 +524,7 @@ $('betBtn').onclick = () => {
   if(!selected){
 
     return toast(
-      'Pick a president first.'
+      'Pick RED, BLACK or a president first.'
     );
 
   }
@@ -508,10 +536,7 @@ $('betBtn').onclick = () => {
     );
 
 
-  if(
-    !Number.isFinite(amount) ||
-    amount < 10
-  ){
+  if(!amount || amount < 10){
 
     return toast(
       'Minimum bet is 10 chips.'
@@ -542,8 +567,14 @@ $('betBtn').onclick = () => {
 
 $('clearBtn').onclick = () => {
 
+  clearSelection();
+
   socket.emit(
     'clearBets'
+  );
+
+  toast(
+    'Bets cleared.'
   );
 
 };
@@ -563,27 +594,19 @@ $('spin').onclick = () => {
 
 
 /* =========================
-   SOCKET CONNECTION
+   SOCKET
 ========================= */
 
 socket.on(
   'connect',
   () => {
 
-    if(me){
-
-      me.id =
-        socket.id;
-
-    }
+    if(me)
+      me.id = socket.id;
 
   }
 );
 
-
-/* =========================
-   ROOM STATE
-========================= */
 
 socket.on(
   'roomState',
@@ -594,8 +617,8 @@ socket.on(
 
     if(
       $('lobby')
-      .classList
-      .contains('active')
+        .classList
+        .contains('active')
     ){
 
       renderLobby();
@@ -605,8 +628,8 @@ socket.on(
 
     if(
       $('game')
-      .classList
-      .contains('active')
+        .classList
+        .contains('active')
     ){
 
       renderGame();
@@ -623,13 +646,17 @@ socket.on(
 
 socket.on(
   'spinStart',
-
-  ({winnerIndex,duration,round}) => {
+  ({
+    winnerIndex,
+    duration,
+    round
+  }) => {
 
     room.spinning = true;
 
     $('result').textContent =
-      'THE WHEEL IS DECIDING…';
+      '🎰 THE WHEEL IS DECIDING…';
+
 
     $('spin').disabled = true;
 
@@ -637,12 +664,6 @@ socket.on(
     const step =
       360 / entries.length;
 
-
-    /*
-      Calculate where the winning
-      face needs to land under
-      the pointer.
-    */
 
     const target =
       360 -
@@ -656,17 +677,12 @@ socket.on(
       360 * 8;
 
 
-    let adjustment =
-      (
-        target -
-        (rotation % 360) +
-        360
-      ) % 360;
-
-
     rotation +=
       extra +
-      adjustment;
+      (
+        (target - rotation) % 360 +
+        360
+      ) % 360;
 
 
     $('wheel').style.transform =
@@ -682,7 +698,6 @@ socket.on(
 
 socket.on(
   'spinResult',
-
   ({winner}) => {
 
     setTimeout(
@@ -702,7 +717,140 @@ socket.on(
 
 
 /* =========================
-   START
+   CASINO SOUND
+========================= */
+
+let audioCtx = null;
+let soundOn = false;
+let ambienceTimer = null;
+
+
+function startCasinoSound(){
+
+  if(soundOn) return;
+
+
+  audioCtx =
+    new (
+      window.AudioContext ||
+      window.webkitAudioContext
+    )();
+
+
+  soundOn = true;
+
+
+  $('soundBtn').textContent =
+    '🔊 SOUND ON';
+
+
+  function casinoTick(){
+
+    if(!soundOn) return;
+
+
+    const osc =
+      audioCtx.createOscillator();
+
+    const gain =
+      audioCtx.createGain();
+
+
+    osc.type = 'sine';
+
+    osc.frequency.value =
+      600 + Math.random()*300;
+
+
+    gain.gain.setValueAtTime(
+      0.0001,
+      audioCtx.currentTime
+    );
+
+
+    gain.gain.exponentialRampToValueAtTime(
+      0.018,
+      audioCtx.currentTime + .03
+    );
+
+
+    gain.gain.exponentialRampToValueAtTime(
+      0.0001,
+      audioCtx.currentTime + .35
+    );
+
+
+    osc.connect(gain);
+
+    gain.connect(
+      audioCtx.destination
+    );
+
+
+    osc.start();
+
+    osc.stop(
+      audioCtx.currentTime + .4
+    );
+
+
+    ambienceTimer =
+      setTimeout(
+        casinoTick,
+        1200 + Math.random()*1800
+      );
+
+  }
+
+
+  casinoTick();
+
+}
+
+
+function stopCasinoSound(){
+
+  soundOn = false;
+
+
+  $('soundBtn').textContent =
+    '🔇 SOUND OFF';
+
+
+  if(ambienceTimer){
+
+    clearTimeout(
+      ambienceTimer
+    );
+
+    ambienceTimer = null;
+
+  }
+
+
+  if(audioCtx){
+
+    audioCtx.close();
+
+    audioCtx = null;
+
+  }
+
+}
+
+
+$('soundBtn').onclick = () => {
+
+  if(soundOn)
+    stopCasinoSound();
+  else
+    startCasinoSound();
+
+};
+
+
+/* =========================
+   INITIALISE
 ========================= */
 
 buildWheel();
