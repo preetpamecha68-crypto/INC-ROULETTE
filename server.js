@@ -14,8 +14,9 @@ const entries = [
 const rooms = new Map();
 
 app.use(express.static(path.join(__dirname, 'public')));
-app.get('*', (_, res) => res.sendFile(path.join(__dirname, 'public', 'index.html')));
-
+app.get(/.*/, (_, res) => {
+  res.sendFile(path.join(__dirname, 'public', 'index.html'));
+});
 function makeRoom(code) {
   return { code, players: new Map(), betsOpen: true, spinning: false, round: 0, history: [] };
 }
