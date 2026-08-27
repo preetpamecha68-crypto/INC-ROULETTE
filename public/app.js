@@ -36,13 +36,19 @@ const imgs = {
 
 
 /* =========================
-   GAME STATE
+   STATE
 ========================= */
 
 let me = null;
 let room = null;
 let selected = null;
+let selectedType = null;
+
 let rotation = 0;
+
+let soundEnabled = false;
+let audioContext = null;
+let musicTimer = null;
 
 
 /* =========================
@@ -78,10 +84,9 @@ function toast(t){
 
   x.classList.add('show');
 
-  setTimeout(
-    () => x.classList.remove('show'),
-    2200
-  );
+  setTimeout(() => {
+    x.classList.remove('show');
+  },2200);
 
 }
 
@@ -105,8 +110,6 @@ function renderPlayers(target){
 
   target.innerHTML = '';
 
-  if(!room || !room.players) return;
-
   room.players.forEach(p => {
 
     const d = document.createElement('div');
@@ -116,14 +119,21 @@ function renderPlayers(target){
       (p.id === me?.id ? ' me' : '');
 
     d.innerHTML = `
+
       <div class="player-line">
+
         <span>${p.name}</span>
-        <span>${p.host ? '👑' : ''}</span>
+
+        <span>
+          ${p.host ? '👑' : ''}
+        </span>
+
       </div>
 
       <div class="player-chip">
         🪙 ${p.balance.toLocaleString()}
       </div>
+
     `;
 
     target.appendChild(d);
@@ -135,36 +145,28 @@ function renderPlayers(target){
 
 function renderLobby(){
 
-  renderPlayers(
-    $('lobbyPlayers')
-  );
+  renderPlayers($('lobbyPlayers'));
 
 }
 
 
 /* =========================
-   GAME RENDER
+   GAME
 ========================= */
 
 function renderGame(){
 
-  if(!room) return;
-
   $('count').textContent =
     `${room.players.length}/5`;
 
-  renderPlayers(
-    $('gamePlayers')
-  );
+  renderPlayers($('gamePlayers'));
 
   $('roundNo').textContent =
     room.round || 1;
 
 
   const p =
-    room.players.find(
-      x => x.id === me?.id
-    );
+    room.players.find(x => x.id === me?.id);
 
 
   if(p){
@@ -172,12 +174,11 @@ function renderGame(){
     $('balance').textContent =
       p.balance.toLocaleString();
 
+
     const st =
       Object.values(p.bets || {})
-      .reduce(
-        (a,b) => a+b,
-        0
-      );
+      .reduce((a,b) => a+b,0);
+
 
     $('staked').textContent =
       st.toLocaleString();
@@ -187,192 +188,209 @@ function renderGame(){
 
   $('history').innerHTML =
     (room.history || [])
-    .map(
-      x =>
+      .map(x =>
         `<span class="history-item">${x}</span>`
-    )
-    .join('');
+      )
+      .join('');
 
 
   $('spin').disabled =
-    room.spinning ||
-    !p?.host;
+    room.spinning || !p?.host;
 
 
   $('spin').textContent =
     p?.host
-      ? (
-        room.spinning
+      ? (room.spinning
           ? 'SPINNING…'
-          : '🎰 SPIN THE ROULETTE'
-      )
+          : 'SPIN THE ROULETTE')
       : 'WAIT FOR HOST';
 
 }
 
 
 /* =========================
-   WHEEL
+   BUILD WHEEL
 ========================= */
 
 function buildWheel(){
 
-  const w = $('wheel');
+  const wheel = $('wheel');
 
-  w.innerHTML = '';
+  wheel.innerHTML = '';
 
   const n = entries.length;
 
   const step = 360 / n;
 
 
-  entries.forEach(
-    (name,i) => {
+  entries.forEach((name,i) => {
 
-      const s =
-        document.createElement('div');
-
-      s.className = 'slice';
+    const entry =
+      document.createElement('div');
 
 
-      s.style.transform =
-        `rotate(${i*step}deg) skewY(${90-step}deg)`;
+    entry.className =
+      'wheel-entry';
 
 
-      const inner =
-        document.createElement('div');
+    /*
+      Put each face around
+      the edge of the roulette.
 
-      inner.className =
-        'slice-inner';
+      The face itself stays upright.
+    */
 
-
-      inner.style.transform =
-        `skewY(-${90-step}deg) rotate(${step/2}deg)`;
-
-
-      inner.innerHTML = `
-        <img
-          src="/assets/${imgs[name]}"
-          alt="${name}"
-        />
-
-        <b>${name}</b>
-      `;
+    const angle =
+      i * step + step / 2;
 
 
-      s.appendChild(inner);
+    const radius = 218;
 
-      w.appendChild(s);
 
-    }
-  );
+    entry.style.transform =
+      `rotate(${angle}deg) translateY(-${radius}px) rotate(-${angle}deg)`;
+
+
+    entry.innerHTML = `
+
+      <img
+        src="/assets/${imgs[name]}"
+        alt="${name}"
+        onerror="this.style.opacity='.25'"
+      />
+
+      <b>${name}</b>
+
+    `;
+
+
+    wheel.appendChild(entry);
+
+  });
 
 }
 
 
 /* =========================
-   BET OPTIONS
+   BET BUTTONS
 ========================= */
 
 function clearSelection(){
 
   selected = null;
 
+  selectedType = null;
+
   document
-    .querySelectorAll(
-      '.bet-option,.colour-option'
-    )
-    .forEach(
-      x =>
-        x.classList.remove('selected')
+    .querySelectorAll('.bet-option,.color-bet')
+    .forEach(x =>
+      x.classList.remove('selected')
     );
 
 }
 
 
-/* PRESIDENTS */
+function selectPresident(name,button){
 
-function buildBets(){
+  selected = name;
 
-  const c =
-    $('betOptions');
-
-  c.innerHTML = '';
+  selectedType = 'PRESIDENT';
 
 
-  entries.forEach(
-    name => {
-
-      const b =
-        document.createElement('button');
-
-      b.className =
-        'bet-option';
+  document
+    .querySelectorAll('.bet-option,.color-bet')
+    .forEach(x =>
+      x.classList.remove('selected')
+    );
 
 
-      b.innerHTML = `
-        <img
-          src="/assets/${imgs[name]}"
-          alt="${name}"
-        >
-
-        <span>
-          ${name}
-
-          <small>
-            11× PAYOUT
-          </small>
-        </span>
-      `;
-
-
-      b.onclick = () => {
-
-        clearSelection();
-
-        selected = name;
-
-        b.classList.add(
-          'selected'
-        );
-
-      };
-
-
-      c.appendChild(b);
-
-    }
-  );
+  button.classList.add('selected');
 
 }
 
 
-/* =========================
-   RED / BLACK
-========================= */
+function selectColor(color,button){
 
-$('redBet').onclick = () => {
+  selected = color;
 
-  clearSelection();
-
-  selected = 'RED';
-
-  $('redBet')
-    .classList.add('selected');
-
-};
+  selectedType = 'COLOR';
 
 
-$('blackBet').onclick = () => {
+  document
+    .querySelectorAll('.bet-option,.color-bet')
+    .forEach(x =>
+      x.classList.remove('selected')
+    );
 
-  clearSelection();
 
-  selected = 'BLACK';
+  button.classList.add('selected');
 
-  $('blackBet')
-    .classList.add('selected');
+}
 
-};
+
+function buildBets(){
+
+  const c = $('betOptions');
+
+  c.innerHTML = '';
+
+
+  entries.forEach(name => {
+
+    const b =
+      document.createElement('button');
+
+
+    b.className =
+      'bet-option';
+
+
+    b.innerHTML = `
+
+      <img src="/assets/${imgs[name]}">
+
+      <span>
+
+        ${name}
+
+        <small>
+          11× payout
+        </small>
+
+      </span>
+
+    `;
+
+
+    b.onclick = () =>
+      selectPresident(name,b);
+
+
+    c.appendChild(b);
+
+  });
+
+
+  /*
+    RED / BLACK
+  */
+
+  document
+    .querySelectorAll('.color-bet')
+    .forEach(button => {
+
+      button.onclick = () => {
+
+        const color =
+          button.dataset.color;
+
+        selectColor(color,button);
+
+      };
+
+    });
+
+}
 
 
 /* =========================
@@ -382,20 +400,17 @@ $('blackBet').onclick = () => {
 $('create').onclick = () => {
 
   const name =
-    $('name')
-      .value
-      .trim();
-
-  err('');
+    $('name').value.trim();
 
 
   if(!name){
 
-    return err(
-      'Please enter your name.'
-    );
+    return err('Enter your name first.');
 
   }
+
+
+  err('');
 
 
   socket.emit(
@@ -430,37 +445,27 @@ $('create').onclick = () => {
 $('join').onclick = () => {
 
   const name =
-    $('name')
-      .value
-      .trim();
+    $('name').value.trim();
+
 
   const code =
-    $('joinCode')
-      .value
-      .trim()
-      .toUpperCase();
+    $('joinCode').value.trim();
+
 
   err('');
 
 
   if(!name)
-    return err(
-      'Please enter your name.'
-    );
+    return err('Enter your name first.');
 
 
   if(!code)
-    return err(
-      'Please enter a room code.'
-    );
+    return err('Enter the room code.');
 
 
   socket.emit(
     'joinRoom',
-    {
-      name,
-      code
-    },
+    {name,code},
     r => {
 
       if(!r.ok)
@@ -484,20 +489,16 @@ $('join').onclick = () => {
 
 
 /* =========================
-   COPY ROOM
+   COPY
 ========================= */
 
 $('copyCode').onclick = () => {
 
-  navigator
-    .clipboard
-    ?.writeText(
-      $('lobbyCode').textContent
-    );
-
-  toast(
-    'Room code copied!'
+  navigator.clipboard?.writeText(
+    $('lobbyCode').textContent
   );
+
+  toast('Room code copied!');
 
 };
 
@@ -511,6 +512,8 @@ $('enterGame').onclick = () => {
   show('game');
 
   renderGame();
+
+  startCasinoSound();
 
 };
 
@@ -531,9 +534,7 @@ $('betBtn').onclick = () => {
 
 
   const amount =
-    Number(
-      $('betAmount').value
-    );
+    Number($('betAmount').value);
 
 
   if(!amount || amount < 10){
@@ -545,11 +546,28 @@ $('betBtn').onclick = () => {
   }
 
 
+  /*
+    IMPORTANT:
+
+    President:
+    entry = president name
+
+    Red:
+    entry = RED
+
+    Black:
+    entry = BLACK
+
+    Your server should recognize
+    RED and BLACK for colour bets.
+  */
+
   socket.emit(
     'placeBet',
     {
       entry:selected,
-      amount
+      amount:amount,
+      type:selectedType
     }
   );
 
@@ -562,20 +580,16 @@ $('betBtn').onclick = () => {
 
 
 /* =========================
-   CLEAR BETS
+   CLEAR BET
 ========================= */
 
 $('clearBtn').onclick = () => {
 
   clearSelection();
 
-  socket.emit(
-    'clearBets'
-  );
+  socket.emit('clearBets');
 
-  toast(
-    'Bets cleared.'
-  );
+  toast('Bets cleared.');
 
 };
 
@@ -586,9 +600,9 @@ $('clearBtn').onclick = () => {
 
 $('spin').onclick = () => {
 
-  socket.emit(
-    'spin'
-  );
+  playSpinSound();
+
+  socket.emit('spin');
 
 };
 
@@ -597,47 +611,41 @@ $('spin').onclick = () => {
    SOCKET
 ========================= */
 
-socket.on(
-  'connect',
-  () => {
+socket.on('connect',() => {
 
-    if(me)
-      me.id = socket.id;
+  if(me)
+    me.id = socket.id;
 
-  }
-);
+});
 
 
-socket.on(
-  'roomState',
-  r => {
+socket.on('roomState',r => {
 
-    room = r;
+  room = r;
 
 
-    if(
-      $('lobby')
-        .classList
-        .contains('active')
-    ){
+  if(
+    $('lobby')
+      .classList
+      .contains('active')
+  ){
 
-      renderLobby();
-
-    }
-
-
-    if(
-      $('game')
-        .classList
-        .contains('active')
-    ){
-
-      renderGame();
-
-    }
+    renderLobby();
 
   }
-);
+
+
+  if(
+    $('game')
+      .classList
+      .contains('active')
+  ){
+
+    renderGame();
+
+  }
+
+});
 
 
 /* =========================
@@ -646,16 +654,13 @@ socket.on(
 
 socket.on(
   'spinStart',
-  ({
-    winnerIndex,
-    duration,
-    round
-  }) => {
+  ({winnerIndex,duration,round}) => {
 
     room.spinning = true;
 
+
     $('result').textContent =
-      '🎰 THE WHEEL IS DECIDING…';
+      'THE WHEEL IS DECIDING…';
 
 
     $('spin').disabled = true;
@@ -664,6 +669,12 @@ socket.on(
     const step =
       360 / entries.length;
 
+
+    /*
+      We want the winning
+      face to land directly
+      under the gold pointer.
+    */
 
     const target =
       360 -
@@ -679,178 +690,265 @@ socket.on(
 
     rotation +=
       extra +
-      (
-        (target - rotation) % 360 +
-        360
-      ) % 360;
+      ((target - rotation) % 360 + 360) % 360;
 
 
     $('wheel').style.transform =
       `rotate(${rotation}deg)`;
+
+
+    playSpinSound();
 
   }
 );
 
 
 /* =========================
-   SPIN RESULT
+   RESULT
 ========================= */
 
 socket.on(
   'spinResult',
   ({winner}) => {
 
-    setTimeout(
-      () => {
+    playWinSound();
 
-        $('result').textContent =
-          `🎉 ${winner} WINS THE ROUND`;
 
-        renderGame();
+    setTimeout(() => {
 
-      },
-      150
-    );
+      $('result').textContent =
+        `🎉 ${winner} WINS THE ROUND`;
+
+
+      renderGame();
+
+    },150);
 
   }
 );
 
 
 /* =========================
-   CASINO SOUND
+   CASINO SOUND ENGINE
 ========================= */
 
-let audioCtx = null;
-let soundOn = false;
-let ambienceTimer = null;
+function initAudio(){
 
+  if(!audioContext){
+
+    audioContext =
+      new (
+        window.AudioContext ||
+        window.webkitAudioContext
+      )();
+
+  }
+
+}
+
+
+function beep(
+  frequency,
+  duration,
+  volume=0.04,
+  type='sine'
+){
+
+  if(!soundEnabled)
+    return;
+
+
+  initAudio();
+
+
+  const osc =
+    audioContext.createOscillator();
+
+
+  const gain =
+    audioContext.createGain();
+
+
+  osc.type = type;
+
+  osc.frequency.value =
+    frequency;
+
+
+  gain.gain.setValueAtTime(
+    volume,
+    audioContext.currentTime
+  );
+
+
+  gain.gain.exponentialRampToValueAtTime(
+    0.001,
+    audioContext.currentTime + duration
+  );
+
+
+  osc.connect(gain);
+
+  gain.connect(
+    audioContext.destination
+  );
+
+
+  osc.start();
+
+  osc.stop(
+    audioContext.currentTime + duration
+  );
+
+}
+
+
+/* =========================
+   SPIN SOUND
+========================= */
+
+function playSpinSound(){
+
+  if(!soundEnabled)
+    return;
+
+
+  initAudio();
+
+
+  let i = 0;
+
+
+  const ticks =
+    setInterval(() => {
+
+      beep(
+        500 + Math.random()*300,
+        .045,
+        .025,
+        'square'
+      );
+
+
+      i++;
+
+
+      if(i > 25)
+        clearInterval(ticks);
+
+    },120);
+
+}
+
+
+/* =========================
+   WIN SOUND
+========================= */
+
+function playWinSound(){
+
+  if(!soundEnabled)
+    return;
+
+
+  beep(523,.18,.06);
+
+  setTimeout(
+    () => beep(659,.18,.06),
+    130
+  );
+
+  setTimeout(
+    () => beep(784,.3,.07),
+    260
+  );
+
+}
+
+
+/* =========================
+   CASINO AMBIENCE
+========================= */
 
 function startCasinoSound(){
 
-  if(soundOn) return;
+  if(!soundEnabled)
+    return;
 
 
-  audioCtx =
-    new (
-      window.AudioContext ||
-      window.webkitAudioContext
-    )();
+  if(musicTimer)
+    return;
 
 
-  soundOn = true;
+  initAudio();
 
 
-  $('soundBtn').textContent =
-    '🔊 SOUND ON';
+  const notes =
+    [196,247,294,247,220,262,330,262];
 
 
-  function casinoTick(){
-
-    if(!soundOn) return;
+  let i = 0;
 
 
-    const osc =
-      audioCtx.createOscillator();
+  musicTimer =
+    setInterval(() => {
 
-    const gain =
-      audioCtx.createGain();
-
-
-    osc.type = 'sine';
-
-    osc.frequency.value =
-      600 + Math.random()*300;
-
-
-    gain.gain.setValueAtTime(
-      0.0001,
-      audioCtx.currentTime
-    );
-
-
-    gain.gain.exponentialRampToValueAtTime(
-      0.018,
-      audioCtx.currentTime + .03
-    );
-
-
-    gain.gain.exponentialRampToValueAtTime(
-      0.0001,
-      audioCtx.currentTime + .35
-    );
-
-
-    osc.connect(gain);
-
-    gain.connect(
-      audioCtx.destination
-    );
-
-
-    osc.start();
-
-    osc.stop(
-      audioCtx.currentTime + .4
-    );
-
-
-    ambienceTimer =
-      setTimeout(
-        casinoTick,
-        1200 + Math.random()*1800
+      beep(
+        notes[i % notes.length],
+        .22,
+        .012,
+        'triangle'
       );
 
-  }
 
+      i++;
 
-  casinoTick();
-
-}
-
-
-function stopCasinoSound(){
-
-  soundOn = false;
-
-
-  $('soundBtn').textContent =
-    '🔇 SOUND OFF';
-
-
-  if(ambienceTimer){
-
-    clearTimeout(
-      ambienceTimer
-    );
-
-    ambienceTimer = null;
-
-  }
-
-
-  if(audioCtx){
-
-    audioCtx.close();
-
-    audioCtx = null;
-
-  }
+    },500);
 
 }
 
+
+/* =========================
+   SOUND BUTTON
+========================= */
 
 $('soundBtn').onclick = () => {
 
-  if(soundOn)
-    stopCasinoSound();
-  else
+  soundEnabled =
+    !soundEnabled;
+
+
+  if(soundEnabled){
+
+    initAudio();
+
+    $('soundBtn').textContent =
+      '🔊 SOUND ON';
+
     startCasinoSound();
+
+    toast('Casino sound enabled 🎰');
+
+  }else{
+
+    $('soundBtn').textContent =
+      '🔇 SOUND OFF';
+
+
+    clearInterval(musicTimer);
+
+    musicTimer = null;
+
+
+    toast('Sound muted.');
+
+  }
 
 };
 
 
 /* =========================
-   INITIALISE
+   START
 ========================= */
 
 buildWheel();
