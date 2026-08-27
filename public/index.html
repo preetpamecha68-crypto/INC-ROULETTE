@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8"/>
 <meta name="viewport" content="width=device-width,initial-scale=1"/>
-<title>INC Roulette</title>
+<title>INC Presidential Roulette</title>
 <link rel="stylesheet" href="/style.css"/>
 </head>
 
@@ -21,8 +21,6 @@
     </div>
   </div>
 
-  <div class="casino-title">♠ CASINO NIGHT ♦</div>
-
   <div id="roomBadge" class="room-badge hidden">
     ROOM <strong id="roomCode"></strong>
   </div>
@@ -30,17 +28,20 @@
 
 <main>
 
+<!-- LANDING -->
 <section id="landing" class="screen active">
+
   <div class="hero-card">
 
-    <div class="eyebrow">THE CORPORATE CLUB PRESENTS</div>
+    <div class="eyebrow">♠ THE CORPORATE CLUB PRESENTS ♠</div>
 
-    <h1>INC <em>ROULETTE</em></h1>
+    <h1>
+      INC <em>ROULETTE</em>
+    </h1>
 
     <p>
-      Pick a president. Place your virtual chips. Spin the wheel.
-      <br/>
-      <strong>NO MONEY. JUST CHAOS.</strong>
+      Pick a president. Place your chips.<br>
+      Spin the wheel. Own the room.
     </p>
 
     <div class="join-grid">
@@ -65,20 +66,23 @@
     <div id="landingError" class="error"></div>
 
     <div class="rules">
-      <span>👥 1–5 players</span>
-      <span>🪙 1,000 starting chips</span>
-      <span>🎰 11 WHEEL SLOTS</span>
+      <span>👥 1–5 PLAYERS</span>
+      <span>🪙 1,000 CHIPS</span>
+      <span>🎰 11 SLOTS</span>
+      <span>♠ CASINO MODE</span>
     </div>
 
   </div>
+
 </section>
 
 
+<!-- LOBBY -->
 <section id="lobby" class="screen">
 
   <div class="lobby-card">
 
-    <div class="eyebrow">♠ ROOM READY ♦</div>
+    <div class="eyebrow">♠ ROOM READY ♠</div>
 
     <h2>Invite the squad.</h2>
 
@@ -101,12 +105,13 @@
 </section>
 
 
+<!-- GAME -->
 <section id="game" class="screen">
 
   <div class="game-head">
 
     <div>
-      <div class="eyebrow">♠ LIVE CASINO TABLE ♦</div>
+      <div class="eyebrow">♠ LIVE CASINO ROOM ♠</div>
       <h2>Place your bets.</h2>
     </div>
 
@@ -119,7 +124,7 @@
 
   <div class="game-layout">
 
-
+    <!-- PLAYERS -->
     <aside class="panel players-panel">
 
       <h3>
@@ -130,19 +135,17 @@
       <div id="gamePlayers"></div>
 
       <div class="history">
-
         <h3>RECENT WINNERS</h3>
-
         <div id="history"></div>
-
       </div>
 
     </aside>
 
 
+    <!-- WHEEL -->
     <section class="wheel-panel">
 
-      <div class="roulette-label">
+      <div class="casino-title">
         ♦ INC PRESIDENTIAL ROULETTE ♦
       </div>
 
@@ -153,81 +156,58 @@
         <div id="wheel" class="wheel"></div>
 
         <div class="wheel-center">
-
           <img src="/assets/inc-logo.png"/>
-
           <span>INC</span>
-
         </div>
 
       </div>
 
-
       <div id="result" class="result">
-        Choose a president to bet on.
+        Choose your bets and spin.
       </div>
 
-
       <div class="spin-row">
-
         <button id="spin" class="spin">
           SPIN THE ROULETTE
         </button>
-
-        <button id="soundBtn" class="sound-btn">
-          🔊 SOUND ON
-        </button>
-
       </div>
 
     </section>
 
 
+    <!-- BETTING -->
     <aside class="panel bet-panel">
 
       <div class="balance">
-
         <span>YOUR CHIPS</span>
-
         <strong id="balance">1,000</strong>
-
       </div>
 
 
       <h3>PLACE YOUR BET</h3>
 
 
-      <!-- RED / BLACK BETTING -->
+      <!-- COLOUR BETS -->
+      <div class="bet-section-title">
+        TABLE BETS
+      </div>
 
       <div class="color-bets">
 
-        <button class="color-bet red-bet" data-color="RED">
-
-          <span class="suit">♦</span>
-
-          <div>
-            <strong>RED</strong>
-            <small>2× PAYOUT</small>
-          </div>
-
+        <button class="color-bet red-bet" data-bet="RED">
+          <strong>♦ RED</strong>
+          <small>2× PAYOUT</small>
         </button>
 
-
-        <button class="color-bet black-bet" data-color="BLACK">
-
-          <span class="suit">♠</span>
-
-          <div>
-            <strong>BLACK</strong>
-            <small>2× PAYOUT</small>
-          </div>
-
+        <button class="color-bet black-bet" data-bet="BLACK">
+          <strong>♠ BLACK</strong>
+          <small>2× PAYOUT</small>
         </button>
 
       </div>
 
 
-      <div class="or-divider">
+      <div class="bet-section-title president-title">
         OR BET ON A PRESIDENT
       </div>
 
@@ -235,6 +215,7 @@
       <div id="betOptions" class="bet-options"></div>
 
 
+      <!-- BET CONTROLS -->
       <div class="bet-controls">
 
         <input
@@ -243,10 +224,11 @@
           min="10"
           step="10"
           value="50"
+          placeholder="Bet amount"
         />
 
         <button id="betBtn" class="primary small">
-          PLACE BET
+          ADD BET
         </button>
 
         <button id="clearBtn" class="ghost small">
@@ -256,19 +238,23 @@
       </div>
 
 
-      <div class="bet-slip">
+      <!-- CURRENT BETS -->
+      <div class="current-bets">
 
-        <span>TOTAL STAKED</span>
+        <div class="current-bets-head">
+          <span>YOUR BETS</span>
+          <b id="staked">0</b>
+        </div>
 
-        <b id="staked">0</b>
+        <div id="betSlip"></div>
 
       </div>
 
 
       <p class="tiny">
-        President bets pay at 11× including your original stake.
-        <br/>
-        Red / Black bets pay at 2×.
+        Presidents pay 10× including stake.<br>
+        Wild Card pays 20× including stake.<br>
+        Red / Black pays 2× including stake.
       </p>
 
     </aside>
