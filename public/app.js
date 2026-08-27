@@ -1,10 +1,5 @@
 const socket = io();
 
-
-/* =========================
-   PRESIDENTS
-========================= */
-
 const entries = [
   'Arya',
   'Avyukt',
@@ -19,41 +14,74 @@ const entries = [
   'WILD CARD'
 ];
 
-
 const imgs = {
-  Arya:'Arya.jpeg',
-  Avyukt:'Avyukt.jpeg',
-  Branson:'Branson.jpeg',
-  Lakshya:'Lakshya.jpeg',
-  Lavina:'Lavina.jpeg',
-  Mihir:'Mihir.jpeg',
-  Motabhai:'Motabhai.jpeg',
-  Priyanshu:'Priyanshu.jpeg',
-  SONchita:'SONchita.jpeg',
-  Tamanna:'Tamanna.jpeg',
-  'WILD CARD':'Wildcard.jpeg'
+  Arya: 'Arya.jpeg',
+  Avyukt: 'Avyukt.jpeg',
+  Branson: 'Branson.jpeg',
+  Lakshya: 'Lakshya.jpeg',
+  Lavina: 'Lavina.jpeg',
+  Mihir: 'Mihir.jpeg',
+  Motabhai: 'Motabhai.jpeg',
+  Priyanshu: 'Priyanshu.jpeg',
+  SONchita: 'SONchita.jpeg',
+  Tamanna: 'Tamanna.jpeg',
+  'WILD CARD': 'Wildcard.jpeg'
 };
 
 
-/* =========================
-   STATE
-========================= */
+/*
+  FIRST 10 PRESIDENTS:
+
+  RED
+  BLACK
+  RED
+  BLACK
+  RED
+  BLACK
+  RED
+  BLACK
+  RED
+  BLACK
+
+  WILD CARD = GREEN
+*/
+
+const slotColors = [
+  'red',
+  'black',
+  'red',
+  'black',
+  'red',
+  'black',
+  'red',
+  'black',
+  'red',
+  'black',
+  'green'
+];
+
 
 let me = null;
 let room = null;
+
 let selected = null;
-let selectedType = null;
 
 let rotation = 0;
 
-let soundEnabled = false;
-let audioContext = null;
-let musicTimer = null;
 
+/*
+  LOCAL BET SELECTION
 
-/* =========================
-   HELPERS
-========================= */
+  Example:
+
+  RED       = 50
+  Tamanna   = 50
+  BLACK     = 100
+
+*/
+
+let localBets = {};
+
 
 const $ = id => document.getElementById(id);
 
@@ -65,7 +93,6 @@ function show(id){
     .forEach(x => x.classList.remove('active'));
 
   $(id).classList.add('active');
-
 }
 
 
@@ -84,9 +111,10 @@ function toast(t){
 
   x.classList.add('show');
 
-  setTimeout(() => {
-    x.classList.remove('show');
-  },2200);
+  setTimeout(
+    () => x.classList.remove('show'),
+    2200
+  );
 
 }
 
@@ -102,13 +130,15 @@ function setRoom(code){
 }
 
 
-/* =========================
+/* ================================
    PLAYERS
-========================= */
+================================ */
 
 function renderPlayers(target){
 
   target.innerHTML = '';
+
+  if(!room || !room.players) return;
 
   room.players.forEach(p => {
 
@@ -119,21 +149,14 @@ function renderPlayers(target){
       (p.id === me?.id ? ' me' : '');
 
     d.innerHTML = `
-
       <div class="player-line">
-
         <span>${p.name}</span>
-
-        <span>
-          ${p.host ? '👑' : ''}
-        </span>
-
+        <span>${p.host ? '👑' : ''}</span>
       </div>
 
       <div class="player-chip">
         🪙 ${p.balance.toLocaleString()}
       </div>
-
     `;
 
     target.appendChild(d);
@@ -150,11 +173,13 @@ function renderLobby(){
 }
 
 
-/* =========================
+/* ================================
    GAME
-========================= */
+================================ */
 
 function renderGame(){
+
+  if(!room) return;
 
   $('count').textContent =
     `${room.players.length}/5`;
@@ -166,7 +191,9 @@ function renderGame(){
 
 
   const p =
-    room.players.find(x => x.id === me?.id);
+    room.players.find(
+      x => x.id === me?.id
+    );
 
 
   if(p){
@@ -174,159 +201,168 @@ function renderGame(){
     $('balance').textContent =
       p.balance.toLocaleString();
 
-
-    const st =
-      Object.values(p.bets || {})
-      .reduce((a,b) => a+b,0);
-
-
-    $('staked').textContent =
-      st.toLocaleString();
-
   }
 
 
   $('history').innerHTML =
     (room.history || [])
-      .map(x =>
-        `<span class="history-item">${x}</span>`
+      .map(
+        x =>
+          `<span class="history-item">${x}</span>`
       )
       .join('');
 
 
   $('spin').disabled =
-    room.spinning || !p?.host;
+    room.spinning ||
+    !p?.host;
 
 
   $('spin').textContent =
     p?.host
-      ? (room.spinning
-          ? 'SPINNING…'
-          : 'SPIN THE ROULETTE')
+      ? (
+          room.spinning
+            ? 'SPINNING…'
+            : 'SPIN THE ROULETTE'
+        )
       : 'WAIT FOR HOST';
+
+
+  renderBetSlip();
 
 }
 
 
-/* =========================
-   BUILD WHEEL
-========================= */
+/* ================================
+   WHEEL
+================================ */
 
 function buildWheel(){
 
-  const wheel = $('wheel');
+  const w = $('wheel');
 
-  wheel.innerHTML = '';
+  w.innerHTML = '';
 
   const n = entries.length;
 
   const step = 360 / n;
 
 
-  entries.forEach((name,i) => {
+  /*
+    RED / BLACK / GREEN BACKGROUND
+  */
 
-    const entry =
+  let gradientParts = [];
+
+  for(let i = 0; i < n; i++){
+
+    const start = i * step;
+    const end = (i + 1) * step;
+
+    let color;
+
+    if(slotColors[i] === 'red'){
+      color = '#b51e2c';
+    }
+
+    else if(slotColors[i] === 'black'){
+      color = '#08090c';
+    }
+
+    else{
+      color = '#239b52';
+    }
+
+    gradientParts.push(
+      `${color} ${start}deg ${end}deg`
+    );
+
+  }
+
+
+  /*
+    The wheel starts at the top.
+
+    CSS conic-gradient begins at 12 o'clock
+    with from -90deg.
+  */
+
+  w.style.background =
+    `conic-gradient(from -90deg, ${gradientParts.join(',')})`;
+
+
+  /*
+    FACE POSITIONING
+
+    Each face sits exactly at the radial
+    midpoint of its section.
+  */
+
+  entries.forEach((name, i) => {
+
+    const slot = document.createElement('div');
+
+    slot.className =
+      'wheel-slot' +
+      (name === 'WILD CARD'
+        ? ' wild-slot'
+        : '');
+
+
+    const content =
       document.createElement('div');
 
-
-    entry.className =
-      'wheel-entry';
+    content.className =
+      'slot-content';
 
 
     /*
-      Put each face around
-      the edge of the roulette.
+      The midpoint angle.
 
-      The face itself stays upright.
+      -90 = top of wheel
     */
 
     const angle =
-      i * step + step / 2;
+      i * step + step / 2 - 90;
 
 
-    const radius = 218;
+    /*
+      Radius.
+
+      34% of wheel size puts the
+      faces nicely inside each section.
+    */
+
+    const radius = 35;
 
 
-    entry.style.transform =
-      `rotate(${angle}deg) translateY(-${radius}px) rotate(-${angle}deg)`;
+    content.style.transform =
+      `rotate(${angle}deg) translateY(-${radius}%) rotate(${-angle}deg)`;
 
 
-    entry.innerHTML = `
-
+    content.innerHTML = `
       <img
         src="/assets/${imgs[name]}"
         alt="${name}"
-        onerror="this.style.opacity='.25'"
+        onerror="this.style.display='none'"
       />
 
       <b>${name}</b>
-
     `;
 
 
-    wheel.appendChild(entry);
+    slot.appendChild(content);
+
+    w.appendChild(slot);
 
   });
 
 }
 
 
-/* =========================
-   BET BUTTONS
-========================= */
-
-function clearSelection(){
-
-  selected = null;
-
-  selectedType = null;
-
-  document
-    .querySelectorAll('.bet-option,.color-bet')
-    .forEach(x =>
-      x.classList.remove('selected')
-    );
-
-}
-
-
-function selectPresident(name,button){
-
-  selected = name;
-
-  selectedType = 'PRESIDENT';
-
-
-  document
-    .querySelectorAll('.bet-option,.color-bet')
-    .forEach(x =>
-      x.classList.remove('selected')
-    );
-
-
-  button.classList.add('selected');
-
-}
-
-
-function selectColor(color,button){
-
-  selected = color;
-
-  selectedType = 'COLOR';
-
-
-  document
-    .querySelectorAll('.bet-option,.color-bet')
-    .forEach(x =>
-      x.classList.remove('selected')
-    );
-
-
-  button.classList.add('selected');
-
-}
-
+/* ================================
+   BET OPTIONS
+================================ */
 
 function buildBets(){
 
@@ -340,77 +376,288 @@ function buildBets(){
     const b =
       document.createElement('button');
 
+    b.className = 'bet-option';
 
-    b.className =
-      'bet-option';
+    const payout =
+      name === 'WILD CARD'
+        ? '20× payout'
+        : '10× payout';
 
 
     b.innerHTML = `
-
-      <img src="/assets/${imgs[name]}">
+      <img
+        src="/assets/${imgs[name]}"
+        alt="${name}"
+      >
 
       <span>
-
         ${name}
 
         <small>
-          11× payout
+          ${payout}
         </small>
-
       </span>
-
     `;
 
 
-    b.onclick = () =>
-      selectPresident(name,b);
+    b.onclick = () => {
+
+      selected = name;
+
+
+      document
+        .querySelectorAll('.bet-option')
+        .forEach(x =>
+          x.classList.remove('selected')
+        );
+
+
+      document
+        .querySelectorAll('.color-bet')
+        .forEach(x =>
+          x.classList.remove('selected')
+        );
+
+
+      b.classList.add('selected');
+
+    };
 
 
     c.appendChild(b);
 
   });
 
+}
+
+
+/* ================================
+   COLOR BET BUTTONS
+================================ */
+
+document
+  .querySelectorAll('.color-bet')
+  .forEach(button => {
+
+    button.onclick = () => {
+
+      selected =
+        button.dataset.bet;
+
+
+      document
+        .querySelectorAll('.color-bet')
+        .forEach(x =>
+          x.classList.remove('selected')
+        );
+
+
+      document
+        .querySelectorAll('.bet-option')
+        .forEach(x =>
+          x.classList.remove('selected')
+        );
+
+
+      button.classList.add('selected');
+
+    };
+
+  });
+
+
+/* ================================
+   ADD BET
+================================ */
+
+$('betBtn').onclick = () => {
+
+  if(!selected){
+
+    toast('Pick RED, BLACK or a president.');
+
+    return;
+
+  }
+
+
+  const amount =
+    Number($('betAmount').value);
+
+
+  if(!amount || amount < 10){
+
+    toast('Minimum bet is 10 chips.');
+
+    return;
+
+  }
+
 
   /*
-    RED / BLACK
+    ADD TO EXISTING BET
+
+    Example:
+
+    Tamanna 50
+    Tamanna 50
+
+    becomes:
+
+    Tamanna 100
   */
 
-  document
-    .querySelectorAll('.color-bet')
-    .forEach(button => {
+  localBets[selected] =
+    (localBets[selected] || 0) + amount;
 
-      button.onclick = () => {
 
-        const color =
-          button.dataset.color;
+  /*
+    Send individual bet to server.
 
-        selectColor(color,button);
+    Your server must support multiple
+    placeBet calls before the spin.
+  */
 
-      };
+  socket.emit(
+    'placeBet',
+    {
+      entry: selected,
+      amount: amount
+    }
+  );
+
+
+  toast(
+    `${amount} chips added to ${selected}`
+  );
+
+
+  renderBetSlip();
+
+};
+
+
+/* ================================
+   BET SLIP
+================================ */
+
+function renderBetSlip(){
+
+  const slip =
+    $('betSlip');
+
+  slip.innerHTML = '';
+
+
+  let total = 0;
+
+
+  Object.entries(localBets)
+    .forEach(([name, amount]) => {
+
+      total += amount;
+
+
+      const item =
+        document.createElement('div');
+
+      let cls = '';
+
+
+      if(name === 'RED'){
+        cls = 'slip-red';
+      }
+
+      else if(name === 'BLACK'){
+        cls = 'slip-black';
+      }
+
+      else if(name === 'WILD CARD'){
+        cls = 'slip-green';
+      }
+
+
+      item.className =
+        `slip-item ${cls}`;
+
+
+      item.innerHTML = `
+        <span class="slip-name">
+          ${name === 'RED'
+            ? '♦ RED'
+            : name === 'BLACK'
+              ? '♠ BLACK'
+              : name}
+        </span>
+
+        <span class="slip-amount">
+          🪙 ${amount}
+        </span>
+      `;
+
+
+      slip.appendChild(item);
 
     });
+
+
+  $('staked').textContent =
+    total.toLocaleString();
 
 }
 
 
-/* =========================
+/* ================================
+   CLEAR BETS
+================================ */
+
+$('clearBtn').onclick = () => {
+
+  localBets = {};
+
+  selected = null;
+
+
+  document
+    .querySelectorAll('.bet-option')
+    .forEach(x =>
+      x.classList.remove('selected')
+    );
+
+
+  document
+    .querySelectorAll('.color-bet')
+    .forEach(x =>
+      x.classList.remove('selected')
+    );
+
+
+  socket.emit('clearBets');
+
+  renderBetSlip();
+
+  toast('All bets cleared.');
+
+};
+
+
+/* ================================
    CREATE ROOM
-========================= */
+================================ */
 
 $('create').onclick = () => {
 
   const name =
     $('name').value.trim();
 
+  err('');
+
 
   if(!name){
 
-    return err('Enter your name first.');
+    return err('Enter your name.');
 
   }
-
-
-  err('');
 
 
   socket.emit(
@@ -423,7 +670,7 @@ $('create').onclick = () => {
 
 
       me = {
-        id:socket.id,
+        id: socket.id,
         name
       };
 
@@ -438,15 +685,14 @@ $('create').onclick = () => {
 };
 
 
-/* =========================
+/* ================================
    JOIN ROOM
-========================= */
+================================ */
 
 $('join').onclick = () => {
 
   const name =
     $('name').value.trim();
-
 
   const code =
     $('joinCode').value.trim();
@@ -455,17 +701,26 @@ $('join').onclick = () => {
   err('');
 
 
-  if(!name)
-    return err('Enter your name first.');
+  if(!name){
+
+    return err('Enter your name.');
+
+  }
 
 
-  if(!code)
+  if(!code){
+
     return err('Enter the room code.');
+
+  }
 
 
   socket.emit(
     'joinRoom',
-    {name,code},
+    {
+      name,
+      code
+    },
     r => {
 
       if(!r.ok)
@@ -473,7 +728,7 @@ $('join').onclick = () => {
 
 
       me = {
-        id:socket.id,
+        id: socket.id,
         name
       };
 
@@ -488,24 +743,25 @@ $('join').onclick = () => {
 };
 
 
-/* =========================
+/* ================================
    COPY
-========================= */
+================================ */
 
 $('copyCode').onclick = () => {
 
-  navigator.clipboard?.writeText(
-    $('lobbyCode').textContent
-  );
+  navigator.clipboard
+    ?.writeText(
+      $('lobbyCode').textContent
+    );
 
   toast('Room code copied!');
 
 };
 
 
-/* =========================
+/* ================================
    ENTER GAME
-========================= */
+================================ */
 
 $('enterGame').onclick = () => {
 
@@ -513,105 +769,34 @@ $('enterGame').onclick = () => {
 
   renderGame();
 
-  startCasinoSound();
-
 };
 
 
-/* =========================
-   PLACE BET
-========================= */
-
-$('betBtn').onclick = () => {
-
-  if(!selected){
-
-    return toast(
-      'Pick RED, BLACK or a president first.'
-    );
-
-  }
-
-
-  const amount =
-    Number($('betAmount').value);
-
-
-  if(!amount || amount < 10){
-
-    return toast(
-      'Minimum bet is 10 chips.'
-    );
-
-  }
-
-
-  /*
-    IMPORTANT:
-
-    President:
-    entry = president name
-
-    Red:
-    entry = RED
-
-    Black:
-    entry = BLACK
-
-    Your server should recognize
-    RED and BLACK for colour bets.
-  */
-
-  socket.emit(
-    'placeBet',
-    {
-      entry:selected,
-      amount:amount,
-      type:selectedType
-    }
-  );
-
-
-  toast(
-    `Bet placed on ${selected}`
-  );
-
-};
-
-
-/* =========================
-   CLEAR BET
-========================= */
-
-$('clearBtn').onclick = () => {
-
-  clearSelection();
-
-  socket.emit('clearBets');
-
-  toast('Bets cleared.');
-
-};
-
-
-/* =========================
+/* ================================
    SPIN
-========================= */
+================================ */
 
 $('spin').onclick = () => {
 
-  playSpinSound();
+  if(Object.keys(localBets).length === 0){
+
+    toast('Place at least one bet first.');
+
+    return;
+
+  }
+
 
   socket.emit('spin');
 
 };
 
 
-/* =========================
+/* ================================
    SOCKET
-========================= */
+================================ */
 
-socket.on('connect',() => {
+socket.on('connect', () => {
 
   if(me)
     me.id = socket.id;
@@ -619,27 +804,19 @@ socket.on('connect',() => {
 });
 
 
-socket.on('roomState',r => {
+socket.on('roomState', r => {
 
   room = r;
 
 
-  if(
-    $('lobby')
-      .classList
-      .contains('active')
-  ){
+  if($('lobby').classList.contains('active')){
 
     renderLobby();
 
   }
 
 
-  if(
-    $('game')
-      .classList
-      .contains('active')
-  ){
+  if($('game').classList.contains('active')){
 
     renderGame();
 
@@ -648,13 +825,13 @@ socket.on('roomState',r => {
 });
 
 
-/* =========================
+/* ================================
    SPIN START
-========================= */
+================================ */
 
 socket.on(
   'spinStart',
-  ({winnerIndex,duration,round}) => {
+  ({winnerIndex, duration, round}) => {
 
     room.spinning = true;
 
@@ -671,17 +848,24 @@ socket.on(
 
 
     /*
-      We want the winning
-      face to land directly
-      under the gold pointer.
+      Put the winning section exactly
+      underneath the top pointer.
     */
 
     const target =
-      360 -
-      (
-        winnerIndex * step +
-        step / 2
-      );
+      -(winnerIndex * step + step / 2);
+
+
+    const current =
+      rotation % 360;
+
+
+    let delta =
+      target - current;
+
+
+    if(delta < 0)
+      delta += 360;
 
 
     const extra =
@@ -689,30 +873,23 @@ socket.on(
 
 
     rotation +=
-      extra +
-      ((target - rotation) % 360 + 360) % 360;
+      extra + delta;
 
 
     $('wheel').style.transform =
       `rotate(${rotation}deg)`;
 
-
-    playSpinSound();
-
   }
 );
 
 
-/* =========================
-   RESULT
-========================= */
+/* ================================
+   SPIN RESULT
+================================ */
 
 socket.on(
   'spinResult',
   ({winner}) => {
-
-    playWinSound();
-
 
     setTimeout(() => {
 
@@ -720,237 +897,45 @@ socket.on(
         `🎉 ${winner} WINS THE ROUND`;
 
 
+      /*
+        Clear local bets after round.
+      */
+
+      localBets = {};
+
+      selected = null;
+
+      renderBetSlip();
+
+
+      document
+        .querySelectorAll('.bet-option')
+        .forEach(x =>
+          x.classList.remove('selected')
+        );
+
+
+      document
+        .querySelectorAll('.color-bet')
+        .forEach(x =>
+          x.classList.remove('selected')
+        );
+
+
       renderGame();
 
-    },150);
+    }, 150);
 
   }
 );
 
 
-/* =========================
-   CASINO SOUND ENGINE
-========================= */
-
-function initAudio(){
-
-  if(!audioContext){
-
-    audioContext =
-      new (
-        window.AudioContext ||
-        window.webkitAudioContext
-      )();
-
-  }
-
-}
-
-
-function beep(
-  frequency,
-  duration,
-  volume=0.04,
-  type='sine'
-){
-
-  if(!soundEnabled)
-    return;
-
-
-  initAudio();
-
-
-  const osc =
-    audioContext.createOscillator();
-
-
-  const gain =
-    audioContext.createGain();
-
-
-  osc.type = type;
-
-  osc.frequency.value =
-    frequency;
-
-
-  gain.gain.setValueAtTime(
-    volume,
-    audioContext.currentTime
-  );
-
-
-  gain.gain.exponentialRampToValueAtTime(
-    0.001,
-    audioContext.currentTime + duration
-  );
-
-
-  osc.connect(gain);
-
-  gain.connect(
-    audioContext.destination
-  );
-
-
-  osc.start();
-
-  osc.stop(
-    audioContext.currentTime + duration
-  );
-
-}
-
-
-/* =========================
-   SPIN SOUND
-========================= */
-
-function playSpinSound(){
-
-  if(!soundEnabled)
-    return;
-
-
-  initAudio();
-
-
-  let i = 0;
-
-
-  const ticks =
-    setInterval(() => {
-
-      beep(
-        500 + Math.random()*300,
-        .045,
-        .025,
-        'square'
-      );
-
-
-      i++;
-
-
-      if(i > 25)
-        clearInterval(ticks);
-
-    },120);
-
-}
-
-
-/* =========================
-   WIN SOUND
-========================= */
-
-function playWinSound(){
-
-  if(!soundEnabled)
-    return;
-
-
-  beep(523,.18,.06);
-
-  setTimeout(
-    () => beep(659,.18,.06),
-    130
-  );
-
-  setTimeout(
-    () => beep(784,.3,.07),
-    260
-  );
-
-}
-
-
-/* =========================
-   CASINO AMBIENCE
-========================= */
-
-function startCasinoSound(){
-
-  if(!soundEnabled)
-    return;
-
-
-  if(musicTimer)
-    return;
-
-
-  initAudio();
-
-
-  const notes =
-    [196,247,294,247,220,262,330,262];
-
-
-  let i = 0;
-
-
-  musicTimer =
-    setInterval(() => {
-
-      beep(
-        notes[i % notes.length],
-        .22,
-        .012,
-        'triangle'
-      );
-
-
-      i++;
-
-    },500);
-
-}
-
-
-/* =========================
-   SOUND BUTTON
-========================= */
-
-$('soundBtn').onclick = () => {
-
-  soundEnabled =
-    !soundEnabled;
-
-
-  if(soundEnabled){
-
-    initAudio();
-
-    $('soundBtn').textContent =
-      '🔊 SOUND ON';
-
-    startCasinoSound();
-
-    toast('Casino sound enabled 🎰');
-
-  }else{
-
-    $('soundBtn').textContent =
-      '🔇 SOUND OFF';
-
-
-    clearInterval(musicTimer);
-
-    musicTimer = null;
-
-
-    toast('Sound muted.');
-
-  }
-
-};
-
-
-/* =========================
-   START
-========================= */
+/* ================================
+   BUILD
+================================ */
 
 buildWheel();
 
 buildBets();
+
+renderBetSlip();
