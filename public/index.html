@@ -1,0 +1,37 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8"/><meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>INC Roulette</title>
+<link rel="stylesheet" href="/style.css"/>
+</head>
+<body>
+<div class="bg-orb orb1"></div><div class="bg-orb orb2"></div>
+<header class="topbar"><div class="brand"><img src="/assets/inc-logo.png"/><div><b>INC ROULETTE</b><span>THE CORPORATE CLUB</span></div></div><div id="roomBadge" class="room-badge hidden">ROOM <strong id="roomCode"></strong></div></header>
+<main>
+<section id="landing" class="screen active">
+  <div class="hero-card">
+    <div class="eyebrow">THE CORPORATE CLUB PRESENTS</div><h1>INC <em>ROULETTE</em></h1>
+    <p>Pick a president. Place your virtual chips. Spin the wheel.<br/>No money. Just chaos.</p>
+    <div class="join-grid"><div><label>YOUR NAME</label><input id="name" maxlength="18" placeholder="Enter your name"/></div><div><label>ROOM CODE</label><input id="joinCode" maxlength="5" placeholder="ABC12"/></div></div>
+    <div class="actions"><button id="create" class="primary">CREATE ROOM</button><button id="join" class="secondary">JOIN ROOM</button></div>
+    <div id="landingError" class="error"></div><div class="rules"><span>👥 1–5 players</span><span>🪙 1,000 starting chips</span><span>🎰 11 wheel slots</span></div>
+  </div>
+</section>
+
+<section id="lobby" class="screen">
+ <div class="lobby-card"><div class="eyebrow">ROOM READY</div><h2>Invite the squad.</h2><div class="code-big" id="lobbyCode">-----</div><button class="secondary small" id="copyCode">COPY ROOM CODE</button><div class="players" id="lobbyPlayers"></div><div class="lobby-actions"><button id="enterGame" class="primary">ENTER ROULETTE →</button></div></div>
+</section>
+
+<section id="game" class="screen">
+ <div class="game-head"><div><div class="eyebrow">LIVE ROOM</div><h2>Place your bets.</h2></div><div class="round">ROUND <b id="roundNo">1</b></div></div>
+ <div class="game-layout">
+  <aside class="panel players-panel"><h3>PLAYERS <span id="count">0/5</span></h3><div id="gamePlayers"></div><div class="history"><h3>RECENT WINNERS</h3><div id="history"></div></div></aside>
+  <section class="wheel-panel"><div class="wheel-wrap"><div class="pointer"></div><div id="wheel" class="wheel"></div><div class="wheel-center"><img src="/assets/inc-logo.png"/><span>INC</span></div></div><div id="result" class="result">Choose a president to bet on.</div><div class="spin-row"><button id="spin" class="spin">SPIN THE ROULETTE</button></div></section>
+  <aside class="panel bet-panel"><div class="balance"><span>YOUR CHIPS</span><strong id="balance">1,000</strong></div><h3>BET ON A PRESIDENT</h3><div id="betOptions" class="bet-options"></div><div class="bet-controls"><input id="betAmount" type="number" min="10" step="10" value="50"/><button id="betBtn" class="primary small">PLACE BET</button><button id="clearBtn" class="ghost small">CLEAR</button></div><div class="bet-slip"><span>TOTAL STAKED</span><b id="staked">0</b></div><p class="tiny">Winning bets pay at 11× including your original stake.</p></aside>
+ </div>
+</section>
+</main>
+<div id="toast"></div>
+<script src="/socket.io/socket.io.js"></script><script src="/app.js"></script>
+</body></html>

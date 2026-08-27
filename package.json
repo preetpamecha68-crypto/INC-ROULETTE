@@ -1,0 +1,9 @@
+{
+  "name": "inc-roulette",
+  "version": "1.0.0",
+  "private": true,
+  "description": "INC Roulette — a virtual-points multiplayer roulette game for up to 5 players.",
+  "main": "server.js",
+  "scripts": {"start": "node server.js", "dev": "node server.js"},
+  "dependencies": {"express": "^5.1.0", "socket.io": "^4.8.1"}
+}
