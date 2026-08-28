@@ -1040,3 +1040,280 @@ main{
   }
 
 }
+/* =========================================================
+   INC PRESIDENTIAL ROULETTE — FINAL WHEEL/BET UPDATE
+========================================================= */
+
+.wheel-label{
+  position:absolute;
+  left:50%;
+  top:50%;
+  width:0;
+  height:0;
+  z-index:2;
+  transform-origin:0 0;
+  pointer-events:none;
+}
+
+.wheel-label-inner{
+  position:absolute;
+  left:-48px;
+  top:-44px;
+  width:96px;
+  height:88px;
+
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+  justify-content:flex-start;
+
+  gap:2px;
+
+  text-align:center;
+
+  text-shadow:
+    0 2px 5px #000;
+}
+
+.wheel-label-inner img{
+  width:42px;
+  height:42px;
+
+  border-radius:50%;
+
+  object-fit:cover;
+
+  border:2px solid #fff;
+
+  box-shadow:
+    0 2px 8px #000;
+}
+
+.wheel-label-inner b{
+  font-size:9px;
+  line-height:1.05;
+
+  max-width:96px;
+
+  white-space:nowrap;
+
+  overflow:hidden;
+
+  text-overflow:ellipsis;
+}
+
+
+/* NUMBER BADGE */
+
+.wheel-number{
+
+  display:flex;
+
+  align-items:center;
+  justify-content:center;
+
+  width:21px;
+  height:21px;
+
+  border-radius:50%;
+
+  background:#111;
+
+  color:#fff;
+
+  border:1px solid #d7b45a;
+
+  font-size:10px;
+
+  font-weight:800;
+
+  position:absolute;
+
+  top:-4px;
+  right:2px;
+
+  z-index:3;
+}
+
+
+/* TABLE BETS */
+
+.table-bets{
+
+  display:grid;
+
+  grid-template-columns:
+    1fr 1fr;
+
+  gap:7px;
+
+  margin-bottom:18px;
+
+}
+
+
+.table-bet{
+
+  border:
+    1px solid #ffffff12;
+
+  border-radius:10px;
+
+  padding:10px 8px;
+
+  background:#101125;
+
+  color:#fff;
+
+  cursor:pointer;
+
+  display:flex;
+
+  flex-direction:column;
+
+  align-items:center;
+
+  gap:3px;
+
+  font:inherit;
+
+  transition:
+    transform .15s,
+    border .15s,
+    opacity .15s;
+
+}
+
+
+.table-bet:hover{
+  transform:translateY(-1px);
+}
+
+
+.table-bet b{
+  font-size:11px;
+}
+
+
+.table-bet small{
+
+  font-size:9px;
+
+  color:#b7b8c7;
+
+  letter-spacing:.5px;
+
+}
+
+
+.table-bet.selected{
+
+  outline:
+    2px solid #7770ff;
+
+  background:#1a1b3c;
+
+}
+
+
+.table-bet:disabled{
+
+  opacity:.45;
+
+  cursor:not-allowed;
+
+}
+
+
+/* INDIVIDUAL BET COLOURS */
+
+.red-bet{
+  background:#b51d31;
+}
+
+.black-bet{
+  background:#17181d;
+}
+
+.odd-bet{
+  background:#30205c;
+}
+
+.even-bet{
+  background:#164c42;
+}
+
+
+.bet-heading{
+  margin-top:2px !important;
+}
+
+
+.bet-option{
+
+  min-height:50px;
+
+}
+
+
+.bet-option b{
+
+  font-size:10px;
+
+}
+
+
+.bet-option small{
+
+  font-size:9px;
+
+}
+
+
+/* MOBILE */
+
+@media(max-width:600px){
+
+  .wheel-label-inner{
+
+    width:78px;
+
+    left:-39px;
+
+  }
+
+
+  .wheel-label-inner img{
+
+    width:34px;
+
+    height:34px;
+
+  }
+
+
+  .wheel-label-inner b{
+
+    font-size:7px;
+
+  }
+
+
+  .wheel-number{
+
+    width:18px;
+
+    height:18px;
+
+    font-size:8px;
+
+  }
+
+
+  .table-bet{
+
+    padding:9px 5px;
+
+  }
+
+}
