@@ -4,7 +4,7 @@ const socket = io();
    WHEEL DATA
 ========================================================= */
 
-const presidents = [
+const entries = [
   'Arya',
   'Avyukt',
   'Branson',
@@ -14,11 +14,7 @@ const presidents = [
   'Motabhai',
   'Priyanshu',
   'SONchita',
-  'Tamanna'
-];
-
-const entries = [
-  ...presidents,
+  'Tamanna',
   'WILD CARD'
 ];
 
@@ -36,26 +32,6 @@ const imgs = {
   'WILD CARD': 'Wildcard.jpeg'
 };
 
-/*
-  Every wheel slot gets a number.
-
-  1-10 = presidents
-  11    = WILD CARD
-
-  Red / Black alternate.
-*/
-
-const wheelData = entries.map((name, index) => ({
-  name,
-  number: index + 1,
-  color:
-    name === 'WILD CARD'
-      ? 'green'
-      : index % 2 === 0
-        ? 'red'
-        : 'black'
-}));
-
 
 /* =========================================================
    STATE
@@ -63,12 +39,9 @@ const wheelData = entries.map((name, index) => ({
 
 let me = null;
 let room = null;
-
-let selectedBet = null;
-let selectedType = null;
-
+let selected = null;
 let rotation = 0;
-let spinning = false;
+let isAnimating = false;
 
 
 /* =========================================================
@@ -82,23 +55,17 @@ function show(id) {
     .querySelectorAll('.screen')
     .forEach(x => x.classList.remove('active'));
 
-  const target = $(id);
-
-  if (target) {
-    target.classList.add('active');
-  }
+  $(id).classList.add('active');
 }
+
 
 function err(text) {
-  if ($('landingError')) {
-    $('landingError').textContent = text || '';
-  }
+  $('landingError').textContent = text || '';
 }
+
 
 function toast(text) {
   const x = $('toast');
-
-  if (!x) return;
 
   x.textContent = text;
   x.classList.add('show');
@@ -108,21 +75,16 @@ function toast(text) {
   }, 2200);
 }
 
+
 function setRoom(code) {
   $('roomCode').textContent = code;
   $('roomBadge').classList.remove('hidden');
   $('lobbyCode').textContent = code;
 }
 
-function getMe() {
-  return room?.players?.find(p => p.id === me?.id);
-}
 
-function getTotalStaked(player) {
-  if (!player?.bets) return 0;
-
-  return Object.values(player.bets)
-    .reduce((total, amount) => total + Number(amount || 0), 0);
+function formatNumber(n) {
+  return Number(n || 0).toLocaleString();
 }
 
 
@@ -132,9 +94,9 @@ function getTotalStaked(player) {
 
 function renderPlayers(target) {
 
-  if (!target || !room) return;
-
   target.innerHTML = '';
+
+  if (!room) return;
 
   room.players.forEach(player => {
 
@@ -151,13 +113,15 @@ function renderPlayers(target) {
       </div>
 
       <div class="player-chip">
-        🪙 ${Number(player.balance || 0).toLocaleString()}
+        🪙 ${formatNumber(player.balance)}
       </div>
     `;
 
     target.appendChild(d);
+
   });
 }
+
 
 function escapeHtml(value) {
 
@@ -167,6 +131,7 @@ function escapeHtml(value) {
     .replaceAll('>', '&gt;')
     .replaceAll('"', '&quot;')
     .replaceAll("'", '&#039;');
+
 }
 
 
@@ -178,7 +143,10 @@ function renderLobby() {
 
   if (!room) return;
 
-  renderPlayers($('lobbyPlayers'));
+  renderPlayers(
+    $('lobbyPlayers')
+  );
+
 }
 
 
@@ -190,309 +158,269 @@ function renderGame() {
 
   if (!room) return;
 
-  const player = getMe();
-
   $('count').textContent =
     `${room.players.length}/5`;
 
-  renderPlayers($('gamePlayers'));
+  renderPlayers(
+    $('gamePlayers')
+  );
 
   $('roundNo').textContent =
     room.round || 1;
 
 
-  /*
-    IMPORTANT:
+  const player =
+    room.players.find(
+      x => x.id === me?.id
+    );
 
-    During a spin we DON'T show newly calculated
-    points. The server only sends the final balance
-    after spinResult.
-  */
 
-  if (player && !room.spinning) {
+  if (player) {
 
     $('balance').textContent =
-      Number(player.balance || 0).toLocaleString();
+      formatNumber(player.balance);
+
+
+    const staked =
+      Object
+        .values(player.bets || {})
+        .reduce(
+          (sum, amount) =>
+            sum + Number(amount || 0),
+          0
+        );
+
 
     $('staked').textContent =
-      getTotalStaked(player).toLocaleString();
+      formatNumber(staked);
 
-  }
-
-
-  if (room.spinning) {
-
-    $('spin').disabled = true;
-
-    $('spin').textContent = 'SPINNING…';
-
-  } else {
-
-    $('spin').disabled =
-      !player?.host;
-
-    $('spin').textContent =
-      player?.host
-        ? 'SPIN THE ROULETTE'
-        : 'WAIT FOR HOST';
   }
 
 
   $('history').innerHTML =
     (room.history || [])
-      .map(x =>
+      .map(item =>
         `<span class="history-item">
-          ${escapeHtml(x)}
+          ${escapeHtml(item)}
         </span>`
       )
       .join('');
 
 
-  /*
-    Disable betting while spinning.
-  */
+  const spinButton =
+    $('spin');
+
+
+  spinButton.disabled =
+    room.spinning ||
+    !player?.host;
+
+
+  if (room.spinning) {
+
+    spinButton.textContent =
+      'SPINNING…';
+
+  } else if (player?.host) {
+
+    spinButton.textContent =
+      'SPIN THE ROULETTE';
+
+  } else {
+
+    spinButton.textContent =
+      'WAIT FOR HOST';
+
+  }
+
+
+  updateBetButton();
+
+}
+
+
+/* =========================================================
+   BET SELECTION
+========================================================= */
+
+function updateBetButton() {
+
+  const button =
+    $('betBtn');
+
+  if (!selected) {
+
+    button.textContent =
+      'PLACE BET';
+
+    return;
+
+  }
+
+
+  if (
+    selected.type === 'RED' ||
+    selected.type === 'BLACK' ||
+    selected.type === 'ODD' ||
+    selected.type === 'EVEN'
+  ) {
+
+    button.textContent =
+      `BET ${selected.type}`;
+
+  } else {
+
+    button.textContent =
+      `BET ${selected.entry}`;
+
+  }
+
+}
+
+
+/* =========================================================
+   SELECT BET
+========================================================= */
+
+function selectBet(type, entry, button) {
+
+  selected = {
+    type,
+    entry
+  };
+
 
   document
-    .querySelectorAll('.bet-option, .table-bet')
-    .forEach(button => {
+    .querySelectorAll(
+      '.bet-option'
+    )
+    .forEach(x =>
+      x.classList.remove('selected')
+    );
 
-      button.disabled =
-        room.spinning ||
-        room.betsOpen === false;
-    });
+
+  button.classList.add(
+    'selected'
+  );
 
 
-  /*
-    Recalculate displayed stake.
-  */
+  updateBetButton();
 
-  if (player && !room.spinning) {
-
-    $('staked').textContent =
-      getTotalStaked(player).toLocaleString();
-  }
 }
 
 
 /* =========================================================
-   WHEEL
+   TABLE BETS
 ========================================================= */
 
-function buildWheel() {
+function buildTableBets() {
 
-  const wheel = $('wheel');
-
-  if (!wheel) return;
-
-  wheel.innerHTML = '';
-
-  const total = wheelData.length;
-  const step = 360 / total;
-
-  wheelData.forEach((slot, index) => {
-
-    const slice =
-      document.createElement('div');
-
-    slice.className = 'slice';
-
-    slice.dataset.number =
-      slot.number;
-
-    slice.dataset.type =
-      slot.color;
-
-
-    /*
-      Alternate colours.
-
-      Wild card gets its own green class.
-    */
-
-    if (slot.color === 'red') {
-
-      slice.style.background =
-        '#c81e32';
-
-    } else if (slot.color === 'black') {
-
-      slice.style.background =
-        '#08090d';
-
-    } else {
-
-      slice.style.background =
-        '#20a85a';
-    }
-
-
-    slice.style.transform =
-      `rotate(${index * step}deg) skewY(${90 - step}deg)`;
-
-
-    const inner =
-      document.createElement('div');
-
-    inner.className =
-      'slice-inner';
-
-    inner.style.transform =
-      `skewY(-${90 - step}deg) rotate(${step / 2}deg)`;
-
-
-    const image =
-      document.createElement('img');
-
-    image.src =
-      `/assets/${imgs[slot.name]}`;
-
-    image.alt =
-      slot.name;
-
-
-    const number =
-      document.createElement('div');
-
-    number.className =
-      'slice-number';
-
-    number.textContent =
-      slot.number;
-
-
-    const name =
-      document.createElement('b');
-
-    name.textContent =
-      slot.name;
-
-
-    inner.appendChild(number);
-    inner.appendChild(image);
-    inner.appendChild(name);
-
-    slice.appendChild(inner);
-
-    wheel.appendChild(slice);
-  });
-}
-
-
-/* =========================================================
-   BETTING PANEL
-========================================================= */
-
-function buildBettingPanel() {
-
-  const panel =
-    document.querySelector('.bet-panel');
-
-  const presidentContainer =
-    $('betOptions');
-
-  if (!panel || !presidentContainer) return;
+  const existing =
+    document.getElementById(
+      'tableBets'
+    );
 
 
   /*
-    Create category betting buttons
-    only once.
+    If the HTML already contains
+    tableBets, use it.
+
+    Otherwise insert it immediately
+    before president bets.
   */
 
-  let tableContainer =
-    document.querySelector('.table-bets');
+  let container = existing;
 
-  if (!tableContainer) {
 
-    tableContainer =
+  if (!container) {
+
+    container =
       document.createElement('div');
 
-    tableContainer.className =
+    container.id =
+      'tableBets';
+
+    container.className =
       'table-bets';
 
-    tableContainer.innerHTML = `
 
-      <button
-        type="button"
-        class="table-bet red-bet"
-        data-bet-type="RED"
-      >
-        <b>♦ RED</b>
-        <small>2× PAYOUT</small>
-      </button>
+    const betOptions =
+      $('betOptions');
 
-      <button
-        type="button"
-        class="table-bet black-bet"
-        data-bet-type="BLACK"
-      >
-        <b>♠ BLACK</b>
-        <small>2× PAYOUT</small>
-      </button>
 
-      <button
-        type="button"
-        class="table-bet odd-bet"
-        data-bet-type="ODD"
-      >
-        <b>ODD</b>
-        <small>3× PAYOUT</small>
-      </button>
+    betOptions.parentNode.insertBefore(
+      container,
+      betOptions
+    );
 
-      <button
-        type="button"
-        class="table-bet even-bet"
-        data-bet-type="EVEN"
-      >
-        <b>EVEN</b>
-        <small>3× PAYOUT</small>
-      </button>
+  }
 
+
+  container.innerHTML = '';
+
+
+  const bets = [
+
+    {
+      type: 'RED',
+      label: '♦ RED',
+      payout: '2× PAYOUT',
+      className: 'red-bet'
+    },
+
+    {
+      type: 'BLACK',
+      label: '♣ BLACK',
+      payout: '2× PAYOUT',
+      className: 'black-bet'
+    },
+
+    {
+      type: 'ODD',
+      label: 'ODD',
+      payout: '3× PAYOUT',
+      className: 'odd-bet'
+    },
+
+    {
+      type: 'EVEN',
+      label: 'EVEN',
+      payout: '3× PAYOUT',
+      className: 'even-bet'
+    }
+
+  ];
+
+
+  bets.forEach(bet => {
+
+    const button =
+      document.createElement('button');
+
+    button.className =
+      `bet-option table-bet ${bet.className}`;
+
+
+    button.innerHTML = `
+      <strong>${bet.label}</strong>
+      <small>${bet.payout}</small>
     `;
 
-    presidentContainer.parentNode.insertBefore(
-      tableContainer,
-      presidentContainer
+
+    button.onclick = () =>
+      selectBet(
+        bet.type,
+        bet.type,
+        button
+      );
+
+
+    container.appendChild(
+      button
     );
-  }
 
+  });
 
-  /*
-    Change old heading.
-  */
-
-  const heading =
-    panel.querySelector('h3');
-
-  if (heading) {
-
-    heading.textContent =
-      'PLACE YOUR BET';
-  }
-
-
-  /*
-    Category click handlers.
-  */
-
-  tableContainer
-    .querySelectorAll('.table-bet')
-    .forEach(button => {
-
-      button.onclick = () => {
-
-        if (room?.spinning) {
-
-          toast('Wait for the spin to finish.');
-
-          return;
-        }
-
-        selectBet(
-          button.dataset.betType,
-          button.dataset.betType
-        );
-      };
-    });
 }
 
 
@@ -505,316 +433,189 @@ function buildPresidentBets() {
   const container =
     $('betOptions');
 
-  if (!container) return;
-
   container.innerHTML = '';
 
-  presidents.forEach((name, index) => {
+
+  entries.forEach(name => {
 
     const button =
       document.createElement('button');
 
-    button.type =
-      'button';
 
     button.className =
-      'bet-option';
-
-    button.dataset.betType =
-      'PRESIDENT';
-
-    button.dataset.betValue =
-      name;
+      'bet-option president-bet';
 
 
     button.innerHTML = `
-
       <img
         src="/assets/${imgs[name]}"
         alt="${escapeHtml(name)}"
       >
 
-      <span>
+      <span class="bet-president-info">
 
-        <b>${escapeHtml(name)}</b>
+        <strong>
+          ${escapeHtml(name)}
+        </strong>
 
         <small>
-          10× PAYOUT
+          ${name === 'WILD CARD'
+            ? '15× PAYOUT'
+            : '10× PAYOUT'}
         </small>
 
       </span>
-
     `;
 
 
-    button.onclick = () => {
-
-      if (room?.spinning) {
-
-        toast('Wait for the spin to finish.');
-
-        return;
-      }
-
+    button.onclick = () =>
       selectBet(
-        'PRESIDENT',
-        name
+        name === 'WILD CARD'
+          ? 'WILDCARD'
+          : 'PRESIDENT',
+
+        name,
+
+        button
       );
-    };
 
 
-    container.appendChild(button);
+    container.appendChild(
+      button
+    );
+
   });
 
-
-  /*
-    Wild Card is a special bet.
-  */
-
-  const wildcard =
-    document.createElement('button');
-
-  wildcard.type =
-    'button';
-
-  wildcard.className =
-    'bet-option';
-
-  wildcard.dataset.betType =
-    'WILDCARD';
-
-  wildcard.dataset.betValue =
-    'WILD CARD';
-
-
-  wildcard.innerHTML = `
-
-    <img
-      src="/assets/${imgs['WILD CARD']}"
-      alt="Wild Card"
-    >
-
-    <span>
-
-      <b>WILD CARD</b>
-
-      <small>
-        15× PAYOUT
-      </small>
-
-    </span>
-
-  `;
-
-
-  wildcard.onclick = () => {
-
-    if (room?.spinning) {
-
-      toast('Wait for the spin to finish.');
-
-      return;
-    }
-
-    selectBet(
-      'WILDCARD',
-      'WILD CARD'
-    );
-  };
-
-
-  container.appendChild(wildcard);
 }
 
 
 /* =========================================================
-   SELECT BET
+   WHEEL
 ========================================================= */
 
-function selectBet(type, value) {
+function buildWheel() {
 
-  selectedType = type;
-  selectedBet = value;
+  const wheel =
+    $('wheel');
 
 
-  /*
-    Clear every selection.
-  */
-
-  document
-    .querySelectorAll(
-      '.table-bet, .bet-option'
-    )
-    .forEach(x =>
-      x.classList.remove('selected')
-    );
+  wheel.innerHTML = '';
 
 
   /*
-    Select table category.
+    The actual wheel background.
+
+    11 equal sections.
   */
 
-  const tableButton =
-    document.querySelector(
-      `.table-bet[data-bet-type="${CSS.escape(value)}"]`
-    );
+  const step =
+    360 / entries.length;
 
-  if (tableButton) {
 
-    tableButton.classList.add('selected');
-  }
+  const colors = entries
+    .map((name, index) => {
+
+      if (name === 'WILD CARD') {
+        return '#18a957';
+      }
+
+      return index % 2 === 0
+        ? '#c91d36'
+        : '#111216';
+
+    });
+
+
+  const gradient =
+    colors
+      .map(
+        (color, index) =>
+          `${color} ${index * step}deg ${(index + 1) * step}deg`
+      )
+      .join(', ');
+
+
+  wheel.style.background =
+    `conic-gradient(from -${step / 2}deg, ${gradient})`;
 
 
   /*
-    Select president / wildcard.
+    Create labels/images/numbers.
   */
 
-  const presidentButton =
-    document.querySelector(
-      `.bet-option[data-bet-value="${CSS.escape(value)}"]`
-    );
+  entries.forEach(
+    (name, index) => {
 
-  if (presidentButton) {
-
-    presidentButton.classList.add('selected');
-  }
+      const centerAngle =
+        index * step;
 
 
-  /*
-    User feedback.
-  */
+      const slot =
+        document.createElement('div');
 
-  let label =
-    value;
-
-  if (type === 'RED') {
-    label = 'RED';
-  }
-
-  if (type === 'BLACK') {
-    label = 'BLACK';
-  }
-
-  if (type === 'ODD') {
-    label = 'ODD';
-  }
-
-  if (type === 'EVEN') {
-    label = 'EVEN';
-  }
-
-  if (type === 'PRESIDENT') {
-    label = `${value} — PRESIDENT`;
-  }
-
-  if (type === 'WILDCARD') {
-    label = 'WILD CARD';
-  }
-
-  if ($('result')) {
-
-    $('result').textContent =
-      `Selected: ${label}`;
-  }
-}
+      slot.className =
+        'wheel-slot';
 
 
-/* =========================================================
-   BET BUTTON
-========================================================= */
-
-$('betBtn').onclick = () => {
-
-  if (room?.spinning) {
-
-    toast('The wheel is spinning.');
-
-    return;
-  }
+      slot.style.setProperty(
+        '--angle',
+        `${centerAngle}deg`
+      );
 
 
-  if (!selectedType || !selectedBet) {
+      slot.innerHTML = `
 
-    toast('Choose a betting option first.');
+        <div class="wheel-number">
+          ${index + 1}
+        </div>
 
-    return;
-  }
+        <img
+          class="wheel-photo"
+          src="/assets/${imgs[name]}"
+          alt="${escapeHtml(name)}"
+        >
 
+        <div class="wheel-name">
+          ${escapeHtml(name)}
+        </div>
 
-  const amount =
-    Math.floor(
-      Number($('betAmount').value)
-    );
-
-
-  if (!Number.isFinite(amount) || amount < 10) {
-
-    toast('Minimum bet is 10 chips.');
-
-    return;
-  }
+      `;
 
 
-  /*
-    Send BOTH the type and value.
+      wheel.appendChild(
+        slot
+      );
 
-    The updated server will understand:
-
-    RED
-    BLACK
-    ODD
-    EVEN
-    PRESIDENT
-    WILDCARD
-  */
-
-  socket.emit(
-    'placeBet',
-    {
-      type: selectedType,
-      entry: selectedBet,
-      amount
     }
   );
 
-  toast(
-    `Bet placed: ${selectedBet} — ${amount} chips`
-  );
-};
+
+  /*
+    Gold separator lines.
+  */
+
+  for (
+    let i = 0;
+    i < entries.length;
+    i++
+  ) {
+
+    const line =
+      document.createElement('div');
+
+    line.className =
+      'wheel-divider';
 
 
-/* =========================================================
-   CLEAR BETS
-========================================================= */
+    line.style.transform =
+      `rotate(${i * step - step / 2}deg)`;
 
-$('clearBtn').onclick = () => {
 
-  if (room?.spinning) {
+    wheel.appendChild(line);
 
-    toast('Cannot clear bets during a spin.');
-
-    return;
   }
 
-  socket.emit('clearBets');
-
-  selectedBet = null;
-  selectedType = null;
-
-  document
-    .querySelectorAll(
-      '.table-bet, .bet-option'
-    )
-    .forEach(x =>
-      x.classList.remove('selected')
-    );
-
-  if ($('result')) {
-
-    $('result').textContent =
-      'Choose your bets and spin.';
-  }
-};
+}
 
 
 /* =========================================================
@@ -826,28 +627,41 @@ $('create').onclick = () => {
   const name =
     $('name').value.trim();
 
+
   err('');
+
 
   socket.emit(
     'createRoom',
     { name },
+
     response => {
 
       if (!response.ok) {
 
-        return err(response.error);
+        return err(
+          response.error
+        );
+
       }
+
 
       me = {
         id: socket.id,
         name
       };
 
-      setRoom(response.code);
+
+      setRoom(
+        response.code
+      );
+
 
       show('lobby');
+
     }
   );
+
 };
 
 
@@ -860,10 +674,15 @@ $('join').onclick = () => {
   const name =
     $('name').value.trim();
 
+
   const code =
-    $('joinCode').value.trim();
+    $('joinCode').value
+      .trim()
+      .toUpperCase();
+
 
   err('');
+
 
   socket.emit(
     'joinRoom',
@@ -871,23 +690,34 @@ $('join').onclick = () => {
       name,
       code
     },
+
     response => {
 
       if (!response.ok) {
 
-        return err(response.error);
+        return err(
+          response.error
+        );
+
       }
+
 
       me = {
         id: socket.id,
         name
       };
 
-      setRoom(response.code);
+
+      setRoom(
+        response.code
+      );
+
 
       show('lobby');
+
     }
   );
+
 };
 
 
@@ -897,12 +727,19 @@ $('join').onclick = () => {
 
 $('copyCode').onclick = () => {
 
-  navigator.clipboard
-    ?.writeText(
-      $('lobbyCode').textContent
-    );
+  const code =
+    $('lobbyCode').textContent;
 
-  toast('Room code copied!');
+
+  navigator
+    .clipboard
+    ?.writeText(code);
+
+
+  toast(
+    'Room code copied!'
+  );
+
 };
 
 
@@ -915,6 +752,92 @@ $('enterGame').onclick = () => {
   show('game');
 
   renderGame();
+
+};
+
+
+/* =========================================================
+   PLACE BET
+========================================================= */
+
+$('betBtn').onclick = () => {
+
+  if (!selected) {
+
+    return toast(
+      'Choose a bet first.'
+    );
+
+  }
+
+
+  const amount =
+    Number(
+      $('betAmount').value
+    );
+
+
+  if (
+    !Number.isFinite(amount) ||
+    amount < 10
+  ) {
+
+    return toast(
+      'Minimum bet is 10 chips.'
+    );
+
+  }
+
+
+  socket.emit(
+    'placeBet',
+    {
+
+      type:
+        selected.type,
+
+      entry:
+        selected.entry,
+
+      amount
+
+    }
+  );
+
+
+  toast(
+    `Bet placed on ${
+      selected.entry
+    }`
+  );
+
+};
+
+
+/* =========================================================
+   CLEAR BETS
+========================================================= */
+
+$('clearBtn').onclick = () => {
+
+  socket.emit(
+    'clearBets'
+  );
+
+  selected = null;
+
+
+  document
+    .querySelectorAll(
+      '.bet-option'
+    )
+    .forEach(x =>
+      x.classList.remove('selected')
+    );
+
+
+  updateBetButton();
+
 };
 
 
@@ -924,58 +847,66 @@ $('enterGame').onclick = () => {
 
 $('spin').onclick = () => {
 
-  if (room?.spinning) return;
+  if (isAnimating) return;
 
-  const player = getMe();
+  socket.emit(
+    'spin'
+  );
 
-  if (!player?.host) {
-
-    toast('Only the host can spin.');
-
-    return;
-  }
-
-  socket.emit('spin');
 };
 
 
 /* =========================================================
-   SOCKET CONNECT
-========================================================= */
-
-socket.on('connect', () => {
-
-  if (me) {
-
-    me.id =
-      socket.id;
-  }
-});
-
-
-/* =========================================================
-   ROOM STATE
+   SOCKET EVENTS
 ========================================================= */
 
 socket.on(
-  'roomState',
-  newRoom => {
+  'connect',
+  () => {
 
-    room = newRoom;
+    if (me) {
+      me.id = socket.id;
+    }
+
+  }
+);
+
+
+socket.on(
+  'roomState',
+  updatedRoom => {
+
+    room = updatedRoom;
+
 
     if (
-      $('lobby').classList.contains('active')
+      $('lobby')
+        .classList
+        .contains('active')
     ) {
 
       renderLobby();
+
     }
+
 
     if (
-      $('game').classList.contains('active')
+      $('game')
+        .classList
+        .contains('active')
     ) {
 
-      renderGame();
+      /*
+        During animation we don't
+        want a premature balance redraw.
+      */
+
+      if (!isAnimating) {
+        renderGame();
+      }
+
     }
+
   }
 );
 
@@ -986,74 +917,78 @@ socket.on(
 
 socket.on(
   'spinStart',
-  ({ winnerIndex, duration, round }) => {
+  ({
+    winnerIndex,
+    duration,
+    round
+  }) => {
 
-    spinning = true;
+    isAnimating = true;
+
 
     if (room) {
-
       room.spinning = true;
-      room.betsOpen = false;
+      room.round = round;
     }
 
 
-    /*
-      CRITICAL:
+    $('result').textContent =
+      'THE WHEEL IS DECIDING…';
 
-      Do NOT update balance here.
 
-      The balance stays at the pre-spin
-      amount until spinResult arrives.
-    */
-
-    if ($('result')) {
-
-      $('result').textContent =
-        '🎰 THE WHEEL IS DECIDING…';
-    }
-
-    $('spin').disabled = true;
-
-    $('spin').textContent =
-      'SPINNING…';
+    $('spin').disabled =
+      true;
 
 
     /*
-      Wheel geometry.
-
-      Winner's CENTER is aligned to the pointer.
+      The center of the winning
+      segment must land exactly
+      under the top arrow.
     */
-
-    const total =
-      wheelData.length;
 
     const step =
-      360 / total;
+      360 / entries.length;
+
 
     const winnerCenter =
-      winnerIndex * step +
-      step / 2;
+      winnerIndex * step;
+
+
+    const desired =
+      360 -
+      winnerCenter;
+
+
+    const current =
+      ((rotation % 360) + 360) % 360;
+
+
+    const delta =
+      ((desired - current) + 360) % 360;
 
 
     /*
-      We want the winner center
-      at 12 o'clock.
-
-      Add multiple complete rotations
-      for the dramatic spin.
+      8 full rotations + exact target.
     */
 
-    const targetRotation =
-      360 * 8 +
-      (360 - winnerCenter);
-
-
     rotation +=
-      targetRotation;
+      360 * 8 +
+      delta;
 
 
-    $('wheel').style.transform =
+    const wheel =
+      $('wheel');
+
+
+    wheel.style.transition =
+      `transform ${
+        duration / 1000
+      }s cubic-bezier(.10,.72,.12,1)`;
+
+
+    wheel.style.transform =
       `rotate(${rotation}deg)`;
+
   }
 );
 
@@ -1064,85 +999,70 @@ socket.on(
 
 socket.on(
   'spinResult',
-  ({ winner, winnerIndex }) => {
+  ({
+    winner,
+    number,
+    color,
+    parity
+  }) => {
 
     /*
-      Wait until the visual wheel has
-      actually completed before showing
-      the result / updated points.
+      Animation has finished.
     */
 
-    setTimeout(() => {
-
-      spinning = false;
+    isAnimating = false;
 
 
-      if ($('result')) {
+    /*
+      Show the actual result first.
+    */
 
-        if (winner === 'WILD CARD') {
+    let category =
+      color;
 
-          $('result').textContent =
-            '🟢 WILD CARD WINS — 15× PAYOUT';
-        } else {
 
-          const number =
-            winnerIndex + 1;
+    if (color === 'GREEN') {
 
-          const color =
-            number % 2 === 1
-              ? 'RED'
-              : 'BLACK';
+      category =
+        'WILD CARD';
 
-          $('result').textContent =
-            `🎉 ${winner} WINS — #${number} ${color}`;
+    }
+
+
+    $('result').textContent =
+      `🎉 ${winner} WINS — #${number} ${category}`;
+
+
+    /*
+      The next roomState event contains
+      the updated balance.
+
+      renderGame happens when it arrives.
+    */
+
+    setTimeout(
+      () => {
+
+        if (room) {
+          room.spinning = false;
         }
-      }
 
+        renderGame();
 
-      /*
-        NOW the server's new balance
-        is allowed to appear.
+      },
+      100
+    );
 
-        This is deliberately after
-        the spin animation.
-      */
-
-      if (room) {
-
-        room.spinning = false;
-        room.betsOpen = true;
-      }
-
-
-      renderGame();
-
-
-      /*
-        Reset selected bet after result.
-      */
-
-      selectedBet = null;
-      selectedType = null;
-
-      document
-        .querySelectorAll(
-          '.table-bet, .bet-option'
-        )
-        .forEach(x =>
-          x.classList.remove('selected')
-        );
-
-    }, 250);
   }
 );
 
 
 /* =========================================================
-   INITIALISE
+   INITIAL BUILD
 ========================================================= */
 
 buildWheel();
 
-buildBettingPanel();
+buildTableBets();
 
 buildPresidentBets();
