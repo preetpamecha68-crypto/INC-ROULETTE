@@ -3,149 +3,85 @@ const http = require('http');
 const path = require('path');
 const { Server } = require('socket.io');
 
-
 const app = express();
+const server = http.createServer(app);
+const io = new Server(server);
 
-const server =
-  http.createServer(app);
-
-const io =
-  new Server(server);
-
-const PORT =
-  process.env.PORT || 3000;
+const PORT = process.env.PORT || 3000;
 
 
 /* =========================================================
    WHEEL
 ========================================================= */
 
+const presidents = [
+  'Arya',
+  'Avyukt',
+  'Branson',
+  'Lakshya',
+  'Lavina',
+  'Mihir',
+  'Motabhai',
+  'Priyanshu',
+  'SONchita',
+  'Tamanna'
+];
+
 const entries = [
-
-  {
-    name: 'Arya',
-    number: 1,
-    color: 'RED',
-    payout: 10
-  },
-
-  {
-    name: 'Avyukt',
-    number: 2,
-    color: 'BLACK',
-    payout: 10
-  },
-
-  {
-    name: 'Branson',
-    number: 3,
-    color: 'RED',
-    payout: 10
-  },
-
-  {
-    name: 'Lakshya',
-    number: 4,
-    color: 'BLACK',
-    payout: 10
-  },
-
-  {
-    name: 'Lavina',
-    number: 5,
-    color: 'RED',
-    payout: 10
-  },
-
-  {
-    name: 'Mihir',
-    number: 6,
-    color: 'BLACK',
-    payout: 10
-  },
-
-  {
-    name: 'Motabhai',
-    number: 7,
-    color: 'RED',
-    payout: 10
-  },
-
-  {
-    name: 'Priyanshu',
-    number: 8,
-    color: 'BLACK',
-    payout: 10
-  },
-
-  {
-    name: 'SONchita',
-    number: 9,
-    color: 'RED',
-    payout: 10
-  },
-
-  {
-    name: 'Tamanna',
-    number: 10,
-    color: 'BLACK',
-    payout: 10
-  },
-
-  {
-    name: 'WILD CARD',
-    number: 0,
-    color: 'GREEN',
-    payout: 15,
-    wildcard: true
-  }
-
+  ...presidents,
+  'WILD CARD'
 ];
 
 
-const rooms =
-  new Map();
+/*
+  Wheel numbers:
 
+  1  Arya
+  2  Avyukt
+  3  Branson
+  4  Lakshya
+  5  Lavina
+  6  Mihir
+  7  Motabhai
+  8  Priyanshu
+  9  SONchita
+  10 Tamanna
+  11 WILD CARD
 
-const TABLE_BETS =
-  new Set([
-    'RED',
-    'BLACK',
-    'ODD',
-    'EVEN'
-  ]);
+  Odd numbers = RED
+  Even numbers = BLACK
 
-
-/* =========================================================
-   EXPRESS
-========================================================= */
-
-app.use(
-  express.static(
-    path.join(
-      __dirname,
-      'public'
-    )
-  )
-);
-
-
-app.get(
-  '*',
-  (_, res) =>
-    res.sendFile(
-      path.join(
-        __dirname,
-        'public',
-        'index.html'
-      )
-    )
-);
+  Wild Card is GREEN.
+*/
 
 
 /* =========================================================
-   ROOM
+   PAYOUTS
 ========================================================= */
+
+const PAYOUTS = {
+
+  RED: 2,
+
+  BLACK: 2,
+
+  ODD: 3,
+
+  EVEN: 3,
+
+  PRESIDENT: 10,
+
+  WILDCARD: 15
+
+};
+
+
+/* =========================================================
+   ROOMS
+========================================================= */
+
+const rooms = new Map();
+
 
 function makeRoom(code) {
 
@@ -153,66 +89,54 @@ function makeRoom(code) {
 
     code,
 
-    players:
-      new Map(),
+    players: new Map(),
 
-    betsOpen:
-      true,
+    betsOpen: true,
 
-    spinning:
-      false,
+    spinning: false,
 
-    round:
-      0,
+    round: 0,
 
-    history:
-      []
+    history: []
 
   };
 
 }
 
 
+/* =========================================================
+   PUBLIC ROOM STATE
+========================================================= */
+
 function publicRoom(room) {
 
   return {
 
-    code:
-      room.code,
+    code: room.code,
 
-    players:
-      [
-        ...room.players.values()
-      ].map(player => ({
+    players: [
+      ...room.players.values()
+    ].map(player => ({
 
-        id:
-          player.id,
+      id: player.id,
 
-        name:
-          player.name,
+      name: player.name,
 
-        balance:
-          player.balance,
+      balance: player.balance,
 
-        host:
-          player.host,
+      host: player.host,
 
-        bets:
-          player.bets
+      bets: player.bets
 
-      })),
+    })),
 
-    betsOpen:
-      room.betsOpen,
+    betsOpen: room.betsOpen,
 
-    spinning:
-      room.spinning,
+    spinning: room.spinning,
 
-    round:
-      room.round,
+    round: room.round,
 
-    history:
-      room.history.slice(-8)
+    history: room.history.slice(-8)
 
   };
 
@@ -232,7 +156,7 @@ function emitRoom(room) {
 
 
 /* =========================================================
-   UTILITIES
+   HELPERS
 ========================================================= */
 
 function cleanName(name) {
@@ -250,23 +174,19 @@ function cleanName(name) {
 
 function makeCode() {
 
-  let code;
+  let c;
 
   do {
 
-    code =
+    c =
       Math.random()
         .toString(36)
         .slice(2, 7)
         .toUpperCase();
 
-  }
+  } while (rooms.has(c));
 
-  while (
-    rooms.has(code)
-  );
-
-  return code;
+  return c;
 
 }
 
@@ -274,126 +194,77 @@ function makeCode() {
 function totalBets(player) {
 
   return Object
-    .values(
-      player.bets || {}
-    )
+    .values(player.bets || {})
     .reduce(
       (total, amount) =>
-        total + amount,
+        total + Number(amount || 0),
       0
     );
 
 }
 
 
-/* =========================================================
-   PAYOUT LOGIC
-========================================================= */
+/*
+  Convert the wheel result into its
+  betting categories.
+*/
 
-function winningBet(
-  betType,
-  winner
-) {
+function getResultInfo(winner, winnerIndex) {
+
+  const number =
+    winnerIndex + 1;
 
 
   /*
-    President bet
+    Wild Card is its own category.
   */
 
-  if (
-    betType ===
-    winner.name
-  ) {
+  if (winner === 'WILD CARD') {
 
     return {
 
-      win: true,
+      number,
 
-      payout:
-        winner.wildcard
-          ? 15
-          : 10
+      color: 'GREEN',
+
+      parity: null,
+
+      winner,
+
+      president: false,
+
+      wildcard: true
 
     };
 
   }
 
 
-  /*
-    RED / BLACK
-  */
-
-  if (
-    betType ===
-    winner.color
-  ) {
-
-    return {
-
-      win: true,
-
-      payout: 2
-
-    };
-
-  }
+  const color =
+    number % 2 === 1
+      ? 'RED'
+      : 'BLACK';
 
 
-  /*
-    ODD
-
-    Wild Card = 0,
-    so it does NOT count
-    as odd.
-  */
-
-  if (
-    betType === 'ODD' &&
-    winner.number > 0 &&
-    winner.number % 2 === 1
-  ) {
-
-    return {
-
-      win: true,
-
-      payout: 3
-
-    };
-
-  }
-
-
-  /*
-    EVEN
-
-    Wild Card = 0,
-    so it does NOT count
-    as even.
-  */
-
-  if (
-    betType === 'EVEN' &&
-    winner.number > 0 &&
-    winner.number % 2 === 0
-  ) {
-
-    return {
-
-      win: true,
-
-      payout: 3
-
-    };
-
-  }
+  const parity =
+    number % 2 === 1
+      ? 'ODD'
+      : 'EVEN';
 
 
   return {
 
-    win: false,
+    number,
 
-    payout: 0
+    color,
+
+    parity,
+
+    winner,
+
+    president: true,
+
+    wildcard: false
 
   };
 
@@ -401,7 +272,44 @@ function winningBet(
 
 
 /* =========================================================
-   SOCKET
+   BET VALIDATION
+========================================================= */
+
+function isValidBet(type, entry) {
+
+  if (
+    type === 'RED' ||
+    type === 'BLACK' ||
+    type === 'ODD' ||
+    type === 'EVEN'
+  ) {
+
+    return entry === type;
+
+  }
+
+
+  if (type === 'PRESIDENT') {
+
+    return presidents.includes(entry);
+
+  }
+
+
+  if (type === 'WILDCARD') {
+
+    return entry === 'WILD CARD';
+
+  }
+
+
+  return false;
+
+}
+
+
+/* =========================================================
+   CONNECTION
 ========================================================= */
 
 io.on(
@@ -415,38 +323,35 @@ io.on(
 
     socket.on(
       'createRoom',
-      ({ name }, callback) => {
+      ({ name }, cb) => {
 
-        const clean =
+        const n =
           cleanName(name);
 
 
-        if (!clean) {
+        if (!n) {
 
-          return callback({
+          return cb({
 
             ok: false,
 
-            error:
-              'Enter your name.'
+            error: 'Enter your name.'
 
           });
 
         }
 
 
-        const roomCode =
+        const c =
           makeCode();
 
 
         const room =
-          makeRoom(
-            roomCode
-          );
+          makeRoom(c);
 
 
         rooms.set(
-          roomCode,
+          c,
           room
         );
 
@@ -455,40 +360,30 @@ io.on(
           socket.id,
           {
 
-            id:
-              socket.id,
+            id: socket.id,
 
-            name:
-              clean,
+            name: n,
 
-            balance:
-              1000,
+            balance: 1000,
 
-            host:
-              true,
+            host: true,
 
-            bets:
-              {}
+            bets: {}
 
           }
         );
 
 
-        socket.join(
-          roomCode
-        );
+        socket.join(c);
+
+        socket.data.room = c;
 
 
-        socket.data.room =
-          roomCode;
-
-
-        callback({
+        cb({
 
           ok: true,
 
-          code:
-            roomCode
+          code: c
 
         });
 
@@ -505,32 +400,29 @@ io.on(
 
     socket.on(
       'joinRoom',
-      ({ name, code }, callback) => {
+      ({ name, code: c }, cb) => {
 
-        const clean =
+        const n =
           cleanName(name);
 
 
-        const roomCode =
-          String(code || '')
+        const rc =
+          String(c || '')
             .trim()
             .toUpperCase();
 
 
         const room =
-          rooms.get(
-            roomCode
-          );
+          rooms.get(rc);
 
 
-        if (!clean) {
+        if (!n) {
 
-          return callback({
+          return cb({
 
             ok: false,
 
-            error:
-              'Enter your name.'
+            error: 'Enter your name.'
 
           });
 
@@ -539,23 +431,20 @@ io.on(
 
         if (!room) {
 
-          return callback({
+          return cb({
 
             ok: false,
 
-            error:
-              'Room not found.'
+            error: 'Room not found.'
 
           });
 
         }
 
 
-        if (
-          room.players.size >= 5
-        ) {
+        if (room.players.size >= 5) {
 
-          return callback({
+          return cb({
 
             ok: false,
 
@@ -567,11 +456,9 @@ io.on(
         }
 
 
-        if (
-          room.spinning
-        ) {
+        if (room.spinning) {
 
-          return callback({
+          return cb({
 
             ok: false,
 
@@ -587,40 +474,30 @@ io.on(
           socket.id,
           {
 
-            id:
-              socket.id,
+            id: socket.id,
 
-            name:
-              clean,
+            name: n,
 
-            balance:
-              1000,
+            balance: 1000,
 
-            host:
-              false,
+            host: false,
 
-            bets:
-              {}
+            bets: {}
 
           }
         );
 
 
-        socket.join(
-          roomCode
-        );
+        socket.join(rc);
+
+        socket.data.room = rc;
 
 
-        socket.data.room =
-          roomCode;
-
-
-        callback({
+        cb({
 
           ok: true,
 
-          code:
-            roomCode
+          code: rc
 
         });
 
@@ -637,14 +514,7 @@ io.on(
 
     socket.on(
       'placeBet',
-      (
-        {
-          entry,
-          amount
-        },
-        callback = () => {}
-      ) => {
-
+      ({ type, entry, amount }) => {
 
         const room =
           rooms.get(
@@ -665,101 +535,120 @@ io.on(
           room.spinning
         ) {
 
-          return callback({
-
-            ok: false,
-
-            error:
-              'Betting is closed.'
-
-          });
+          return;
 
         }
 
 
-        const betAmount =
+        const a =
           Math.floor(
             Number(amount)
           );
 
 
-        const validBet =
-          entries.some(
-            entryData =>
-              entryData.name ===
-              entry
-          ) ||
-          TABLE_BETS.has(entry);
-
+        /*
+          Basic amount validation.
+        */
 
         if (
-          !validBet ||
-          !Number.isFinite(
-            betAmount
-          ) ||
-          betAmount < 10
+          !Number.isFinite(a) ||
+          a < 10
         ) {
 
-          return callback({
-
-            ok: false,
-
-            error:
-              'Invalid bet.'
-
-          });
+          return;
 
         }
 
 
         /*
-          IMPORTANT FIX:
-
-          Balance has already been reduced
-          by previous bets.
-
-          Therefore we ONLY need to check
-          whether this NEW bet fits the
-          remaining balance.
-
-          The old code incorrectly added
-          previous bets again.
+          Make sure the requested
+          bet actually exists.
         */
 
         if (
-          betAmount >
-          player.balance
+          !isValidBet(
+            type,
+            entry
+          )
         ) {
 
-          return callback({
-
-            ok: false,
-
-            error:
-              'Not enough chips.'
-
-          });
+          return;
 
         }
 
 
-        player.bets[entry] =
-          (
-            player.bets[entry] ||
-            0
-          ) +
-          betAmount;
+        /*
+          Prevent betting more chips
+          than the player owns.
+        */
+
+        if (a > player.balance) {
+
+          return;
+
+        }
 
 
-        player.balance -=
-          betAmount;
+        const currentTotal =
+          totalBets(player);
 
 
-        callback({
+        if (
+          currentTotal + a >
+          player.balance
+        ) {
 
-          ok: true
+          return;
 
-        });
+        }
+
+
+        /*
+          Store bets with a unique key.
+
+          Examples:
+
+          RED
+          BLACK
+          ODD
+          EVEN
+          PRESIDENT:Arya
+          WILDCARD
+        */
+
+        let key;
+
+
+        if (
+          type === 'RED' ||
+          type === 'BLACK' ||
+          type === 'ODD' ||
+          type === 'EVEN'
+        ) {
+
+          key = type;
+
+        } else {
+
+          key =
+            `${type}:${entry}`;
+
+        }
+
+
+        player.bets[key] =
+          (player.bets[key] || 0) + a;
+
+
+        /*
+          Remove chips immediately from
+          available balance.
+
+          They are returned through payout
+          calculation after the spin.
+        */
+
+        player.balance -= a;
 
 
         emitRoom(room);
@@ -800,12 +689,16 @@ io.on(
         }
 
 
+        /*
+          Return every currently placed
+          chip to the player's balance.
+        */
+
         player.balance +=
           totalBets(player);
 
 
-        player.bets =
-          {};
+        player.bets = {};
 
 
         emitRoom(room);
@@ -828,16 +721,20 @@ io.on(
           );
 
 
-        const host =
+        const player =
           room?.players.get(
             socket.id
           );
 
 
+        /*
+          Only host can spin.
+        */
+
         if (
           !room ||
-          !host ||
-          !host.host ||
+          !player ||
+          !player.host ||
           room.spinning
         ) {
 
@@ -846,19 +743,21 @@ io.on(
         }
 
 
-        room.spinning =
-          true;
+        /*
+          Start spin.
+        */
 
+        room.spinning = true;
 
-        room.betsOpen =
-          false;
-
+        room.betsOpen = false;
 
         room.round++;
 
 
         /*
-          Decide winner ONCE on server.
+          Server decides the winner.
+
+          Clients do NOT decide this.
         */
 
         const winnerIndex =
@@ -873,9 +772,10 @@ io.on(
 
 
         /*
-          Start animation.
+          Tell every client the wheel
+          is beginning its animation.
 
-          NO BALANCES ARE UPDATED HERE.
+          NO BALANCE UPDATE HERE.
         */
 
         io
@@ -896,65 +796,61 @@ io.on(
           );
 
 
-        emitRoom(room);
-
-
         /*
-          Wait for animation to finish.
+          Wait for the visual spin to
+          finish before calculating and
+          revealing payouts.
         */
 
         setTimeout(
           () => {
 
+            const result =
+              getResultInfo(
+                winner,
+                winnerIndex
+              );
+
+
+            /*
+              PAY EVERY PLAYER
+            */
 
             for (
-              const player
+              const currentPlayer
               of room.players.values()
             ) {
 
 
-              let winnings =
-                0;
+              const bets =
+                currentPlayer.bets || {};
 
 
               /*
-                Every bet is evaluated
-                independently.
-
-                Example:
-
-                ₹50 RED
-                ₹50 ODD
-                ₹50 Arya
-
-                Multiple bets can all win.
+                RED
               */
 
-              for (
-                const [
-                  betType,
-                  stake
-                ]
-                of Object.entries(
-                  player.bets || {}
-                )
+              if (
+                result.color === 'RED'
               ) {
 
-
-                const result =
-                  winningBet(
-                    betType,
-                    winner
+                const bet =
+                  Number(
+                    bets.RED || 0
                   );
 
 
-                if (
-                  result.win
-                ) {
+                if (bet > 0) {
 
-                  winnings +=
-                    stake *
-                    result.payout;
+                  /*
+                    Since the stake was
+                    removed when betting,
+                    return 2x total.
+                  */
+
+                  currentPlayer.balance +=
+                    bet *
+                    PAYOUTS.RED;
 
                 }
 
@@ -962,54 +858,172 @@ io.on(
 
 
               /*
-                Stakes were already removed
-                when bets were placed.
-
-                Therefore this adds the FULL
-                payout including the original
-                stake.
-
-                RED/BLACK:
-                  50 → 100
-
-                ODD/EVEN:
-                  50 → 150
-
-                PRESIDENT:
-                  50 → 500
-
-                WILD CARD:
-                  50 → 750
+                BLACK
               */
 
-              player.balance +=
-                winnings;
+              if (
+                result.color === 'BLACK'
+              ) {
+
+                const bet =
+                  Number(
+                    bets.BLACK || 0
+                  );
 
 
-              player.bets =
-                {};
+                if (bet > 0) {
+
+                  currentPlayer.balance +=
+                    bet *
+                    PAYOUTS.BLACK;
+
+                }
+
+              }
+
+
+              /*
+                ODD
+              */
+
+              if (
+                result.parity === 'ODD'
+              ) {
+
+                const bet =
+                  Number(
+                    bets.ODD || 0
+                  );
+
+
+                if (bet > 0) {
+
+                  currentPlayer.balance +=
+                    bet *
+                    PAYOUTS.ODD;
+
+                }
+
+              }
+
+
+              /*
+                EVEN
+              */
+
+              if (
+                result.parity === 'EVEN'
+              ) {
+
+                const bet =
+                  Number(
+                    bets.EVEN || 0
+                  );
+
+
+                if (bet > 0) {
+
+                  currentPlayer.balance +=
+                    bet *
+                    PAYOUTS.EVEN;
+
+                }
+
+              }
+
+
+              /*
+                PRESIDENT
+              */
+
+              if (
+                result.president
+              ) {
+
+                const key =
+                  `PRESIDENT:${winner}`;
+
+
+                const bet =
+                  Number(
+                    bets[key] || 0
+                  );
+
+
+                if (bet > 0) {
+
+                  currentPlayer.balance +=
+                    bet *
+                    PAYOUTS.PRESIDENT;
+
+                }
+
+              }
+
+
+              /*
+                WILD CARD
+              */
+
+              if (
+                result.wildcard
+              ) {
+
+                const bet =
+                  Number(
+                    bets['WILDCARD:WILD CARD'] || 0
+                  );
+
+
+                if (bet > 0) {
+
+                  currentPlayer.balance +=
+                    bet *
+                    PAYOUTS.WILDCARD;
+
+                }
+
+              }
+
+
+              /*
+                Clear bets AFTER payout
+                calculation.
+              */
+
+              currentPlayer.bets = {};
 
             }
 
 
+            /*
+              Save result to history.
+            */
+
             room.history.push(
-              winner.name
+              `${winner} #${result.number}`
             );
 
 
-            room.spinning =
-              false;
+            /*
+              Unlock betting again.
+            */
 
+            room.spinning = false;
 
-            room.betsOpen =
-              true;
+            room.betsOpen = true;
 
 
             /*
-              Result is only sent now.
+              CRITICAL ORDER:
 
-              Balance is also only revealed
-              through the new room state now.
+              1. spinResult
+              2. emitRoom
+
+              Client receives spinResult,
+              waits for animation,
+              THEN renderGame() reads the
+              updated room balance.
             */
 
             io
@@ -1018,10 +1032,18 @@ io.on(
                 'spinResult',
                 {
 
-                  winner:
-                    winner.name,
+                  winner,
 
-                  winnerIndex
+                  winnerIndex,
+
+                  number:
+                    result.number,
+
+                  color:
+                    result.color,
+
+                  parity:
+                    result.parity
 
                 }
               );
@@ -1030,6 +1052,7 @@ io.on(
             emitRoom(room);
 
           },
+
           6500
         );
 
@@ -1045,14 +1068,12 @@ io.on(
       'disconnect',
       () => {
 
-        const roomCode =
+        const rc =
           socket.data.room;
 
 
         const room =
-          rooms.get(
-            roomCode
-          );
+          rooms.get(rc);
 
 
         if (!room) {
@@ -1062,10 +1083,14 @@ io.on(
         }
 
 
+        const leaving =
+          room.players.get(
+            socket.id
+          );
+
+
         const wasHost =
-          room.players
-            .get(socket.id)
-            ?.host;
+          leaving?.host;
 
 
         room.players.delete(
@@ -1073,13 +1098,15 @@ io.on(
         );
 
 
+        /*
+          Delete empty rooms.
+        */
+
         if (
           room.players.size === 0
         ) {
 
-          rooms.delete(
-            roomCode
-          );
+          rooms.delete(rc);
 
           return;
 
@@ -1087,8 +1114,7 @@ io.on(
 
 
         /*
-          Automatically promote
-          another player if host leaves.
+          Transfer host status.
         */
 
         if (wasHost) {
@@ -1102,8 +1128,7 @@ io.on(
 
           if (next) {
 
-            next.host =
-              true;
+            next.host = true;
 
           }
 
