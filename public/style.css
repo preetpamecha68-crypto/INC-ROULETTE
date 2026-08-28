@@ -1782,3 +1782,7 @@ main {
   }
 
 }
+/* REMOVE UNWANTED WHEEL SPOKES */
+.wheel-divider {
+  display: none !important;
+}
