@@ -590,30 +590,7 @@ function buildWheel() {
   );
 
 
-  /*
-    Gold separator lines.
-  */
-
-  for (
-    let i = 0;
-    i < entries.length;
-    i++
-  ) {
-
-    const line =
-      document.createElement('div');
-
-    line.className =
-      'wheel-divider';
-
-
-    line.style.transform =
-      `rotate(${i * step - step / 2}deg)`;
-
-
-    wheel.appendChild(line);
-
-  }
+  
 
 }
 
