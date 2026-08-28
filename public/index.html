@@ -1,26 +1,25 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="en">
 
 <head>
-  <meta charset="utf-8" />
+  <meta charset="UTF-8">
 
   <meta
     name="viewport"
-    content="width=device-width, initial-scale=1"
-  />
+    content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"
+  >
 
   <title>INC Presidential Roulette</title>
 
-  <link
-    rel="stylesheet"
-    href="/style.css"
-  />
+  <link rel="stylesheet" href="/style.css">
 </head>
 
 
 <body>
 
-  <!-- Background -->
+  <!-- =====================================================
+       BACKGROUND
+  ====================================================== -->
 
   <div class="bg-orb orb1"></div>
   <div class="bg-orb orb2"></div>
@@ -37,16 +36,11 @@
       <img
         src="/assets/inc-logo.png"
         alt="INC"
-      />
+      >
 
       <div>
-
         <b>INC PRESIDENTIAL ROULETTE</b>
-
-        <span>
-          THE CORPORATE CLUB
-        </span>
-
+        <span>THE CORPORATE CLUB</span>
       </div>
 
     </div>
@@ -56,13 +50,8 @@
       id="roomBadge"
       class="room-badge hidden"
     >
-
       ROOM
-
-      <strong id="roomCode">
-        -----
-      </strong>
-
+      <strong id="roomCode">----</strong>
     </div>
 
   </header>
@@ -73,7 +62,7 @@
 
 
     <!-- ===================================================
-         LANDING
+         LANDING SCREEN
     ==================================================== -->
 
     <section
@@ -84,19 +73,20 @@
       <div class="hero-card">
 
         <div class="eyebrow">
-          THE CORPORATE CLUB PRESENTS
+          INC PRESENTS
         </div>
 
 
         <h1>
-          INC <em>ROULETTE</em>
+          Presidential
+          <br>
+          <em>Roulette.</em>
         </h1>
 
 
         <p>
-          Pick your bet. Place your virtual chips.
-          Spin the wheel.<br />
-          No money. Just chaos.
+          Choose your bets, take your chances,
+          and let the wheel decide your fate.
         </p>
 
 
@@ -104,32 +94,34 @@
 
           <div>
 
-            <label>
+            <label for="name">
               YOUR NAME
             </label>
 
             <input
               id="name"
-              maxlength="18"
+              type="text"
+              maxlength="20"
               placeholder="Enter your name"
               autocomplete="off"
-            />
+            >
 
           </div>
 
 
           <div>
 
-            <label>
+            <label for="joinCode">
               ROOM CODE
             </label>
 
             <input
               id="joinCode"
-              maxlength="5"
-              placeholder="ABC12"
+              type="text"
+              maxlength="6"
+              placeholder="Optional"
               autocomplete="off"
-            />
+            >
 
           </div>
 
@@ -141,6 +133,7 @@
           <button
             id="create"
             class="primary"
+            type="button"
           >
             CREATE ROOM
           </button>
@@ -149,6 +142,7 @@
           <button
             id="join"
             class="secondary"
+            type="button"
           >
             JOIN ROOM
           </button>
@@ -164,17 +158,17 @@
 
         <div class="rules">
 
-          <span>
-            👥 1–5 players
-          </span>
+          <span>🔴 RED — 2×</span>
 
-          <span>
-            🪙 1,000 starting chips
-          </span>
+          <span>⚫ BLACK — 2×</span>
 
-          <span>
-            🎰 11 wheel slots
-          </span>
+          <span>🟣 ODD — 3×</span>
+
+          <span>🟢 EVEN — 3×</span>
+
+          <span>👤 PRESIDENT — 10×</span>
+
+          <span>🃏 WILD CARD — 15×</span>
 
         </div>
 
@@ -185,7 +179,7 @@
 
 
     <!-- ===================================================
-         LOBBY
+         LOBBY SCREEN
     ==================================================== -->
 
     <section
@@ -196,47 +190,47 @@
       <div class="lobby-card">
 
         <div class="eyebrow">
-          ROOM READY
+          ROOM CREATED
         </div>
 
 
         <h2>
-          Invite the squad.
+          Waiting for players
         </h2>
 
 
         <div
-          class="code-big"
           id="lobbyCode"
+          class="code-big"
         >
-          -----
+          ----
         </div>
 
 
         <button
-          class="secondary small"
           id="copyCode"
+          class="secondary"
+          type="button"
         >
           COPY ROOM CODE
         </button>
 
 
         <div
-          class="players"
           id="lobbyPlayers"
+          class="players-list"
+          style="margin-top:25px;"
         ></div>
 
 
-        <div class="lobby-actions">
-
-          <button
-            id="enterGame"
-            class="primary"
-          >
-            ENTER ROULETTE →
-          </button>
-
-        </div>
+        <button
+          id="enterGame"
+          class="primary"
+          type="button"
+          style="margin-top:20px;"
+        >
+          ENTER GAME
+        </button>
 
       </div>
 
@@ -245,7 +239,7 @@
 
 
     <!-- ===================================================
-         GAME
+         GAME SCREEN
     ==================================================== -->
 
     <section
@@ -261,11 +255,11 @@
         <div>
 
           <div class="eyebrow">
-            LIVE ROOM
+            INC PRESIDENTIAL ROULETTE
           </div>
 
           <h2>
-            Place your bets.
+            The Wheel
           </h2>
 
         </div>
@@ -274,10 +268,7 @@
         <div class="round">
 
           ROUND
-
-          <b id="roundNo">
-            1
-          </b>
+          <b id="roundNo">1</b>
 
         </div>
 
@@ -285,15 +276,13 @@
 
 
 
-      <!-- =================================================
-           GAME LAYOUT
-      ================================================== -->
+      <!-- GAME LAYOUT -->
 
       <div class="game-layout">
 
 
         <!-- ===============================================
-             PLAYERS
+             LEFT — PLAYERS
         ================================================ -->
 
         <aside
@@ -302,7 +291,7 @@
 
           <h3>
 
-            PLAYERS
+            <span>PLAYERS</span>
 
             <span id="count">
               0/5
@@ -313,19 +302,18 @@
 
           <div
             id="gamePlayers"
+            class="players-list"
           ></div>
 
 
           <div class="history">
 
             <h3>
-              RECENT WINNERS
+              <span>RECENT WINNERS</span>
             </h3>
 
 
-            <div
-              id="history"
-            ></div>
+            <div id="history"></div>
 
           </div>
 
@@ -334,21 +322,23 @@
 
 
         <!-- ===============================================
-             WHEEL
+             CENTER — WHEEL
         ================================================ -->
 
-        <section class="wheel-panel">
+        <section
+          class="wheel-panel"
+        >
 
 
           <div class="wheel-wrap">
 
 
-            <!-- Pointer -->
+            <!-- POINTER -->
 
             <div class="pointer"></div>
 
 
-            <!-- Wheel -->
+            <!-- ACTUAL WHEEL -->
 
             <div
               id="wheel"
@@ -356,14 +346,14 @@
             ></div>
 
 
-            <!-- Center -->
+            <!-- CENTER HUB -->
 
             <div class="wheel-center">
 
               <img
                 src="/assets/inc-logo.png"
                 alt="INC"
-              />
+              >
 
               <span>
                 INC
@@ -376,7 +366,7 @@
 
 
 
-          <!-- Result -->
+          <!-- RESULT -->
 
           <div
             id="result"
@@ -386,26 +376,22 @@
           </div>
 
 
-          <!-- Spin -->
+          <!-- SPIN -->
 
-          <div class="spin-row">
-
-            <button
-              id="spin"
-              class="spin"
-            >
-              SPIN THE ROULETTE
-            </button>
-
-          </div>
-
+          <button
+            id="spin"
+            class="spin"
+            type="button"
+          >
+            SPIN THE ROULETTE
+          </button>
 
         </section>
 
 
 
         <!-- ===============================================
-             BETTING PANEL
+             RIGHT — BETTING
         ================================================ -->
 
         <aside
@@ -429,32 +415,44 @@
 
 
 
-          <!-- CATEGORY BETS -->
+          <!-- BETTING -->
 
           <h3>
-            TABLE BETS
+
+            <span>
+              PLACE YOUR BET
+            </span>
+
           </h3>
 
 
-          <!--
-            app.js automatically creates:
 
-            RED       2×
-            BLACK     2×
-            ODD       3×
-            EVEN      3×
+          <!-- TABLE BETS
+               JS FILLS THIS
           -->
 
+          <div
+            id="tableBets"
+            class="table-bets"
+          ></div>
 
 
-          <!-- PRESIDENT BETS -->
+
+          <!-- PRESIDENT -->
 
           <h3 class="bet-heading">
 
-            OR BET ON A PRESIDENT
+            <span>
+              OR BET ON A PRESIDENT
+            </span>
 
           </h3>
 
+
+
+          <!-- PRESIDENT OPTIONS
+               JS FILLS THIS
+          -->
 
           <div
             id="betOptions"
@@ -467,20 +465,20 @@
 
           <div class="bet-controls">
 
-
             <input
               id="betAmount"
               type="number"
               min="10"
               step="10"
               value="50"
-              inputmode="numeric"
-            />
+              placeholder="Bet amount"
+            >
 
 
             <button
               id="betBtn"
-              class="primary small"
+              class="primary"
+              type="button"
             >
               PLACE BET
             </button>
@@ -488,52 +486,58 @@
 
             <button
               id="clearBtn"
-              class="ghost small"
+              class="ghost"
+              type="button"
             >
               CLEAR
             </button>
 
-
           </div>
 
 
 
-          <!-- TOTAL STAKED -->
+          <!-- BET SLIP -->
 
           <div class="bet-slip">
 
-            <span>
-              TOTAL STAKED
-            </span>
+            <div>
 
-            <b id="staked">
-              0
-            </b>
+              <span>
+                TOTAL STAKED
+              </span>
+
+              <strong
+                id="staked"
+              >
+                0
+              </strong>
+
+            </div>
 
           </div>
 
 
 
-          <!-- PAYOUT INFO -->
+          <!-- PAYOUT LEGEND -->
 
-          <p class="tiny">
+          <div
+            class="tiny"
+            style="margin-top:14px;"
+          >
 
-            🔴 RED — 2×<br />
+            🔴 RED — 2×<br>
 
-            ⚫ BLACK — 2×<br />
+            ⚫ BLACK — 2×<br>
 
-            ODD — 3×<br />
+            🟣 ODD — 3×<br>
 
-            EVEN — 3×<br />
+            🟢 EVEN — 3×<br>
 
-            PRESIDENT — 10×<br />
+            👤 PRESIDENT — 10×<br>
 
-            🟢 WILD CARD — 15×<br /><br />
+            🃏 WILD CARD — 15×
 
-            Payouts are revealed only
-            after the wheel finishes spinning.
-
-          </p>
+          </div>
 
 
         </aside>
@@ -543,30 +547,31 @@
 
     </section>
 
+
   </main>
 
 
 
-  <!-- Toast -->
+  <!-- =====================================================
+       TOAST
+  ====================================================== -->
 
-  <div
-    id="toast"
-  ></div>
-
-
-
-  <!-- Socket.IO -->
-
-  <script
-    src="/socket.io/socket.io.js"
-  ></script>
+  <div id="toast"></div>
 
 
-  <!-- Game -->
 
-  <script
-    src="/app.js"
-  ></script>
+  <!-- =====================================================
+       SOCKET.IO
+  ====================================================== -->
+
+  <script src="/socket.io/socket.io.js"></script>
+
+
+  <!-- =====================================================
+       GAME JS
+  ====================================================== -->
+
+  <script src="/app.js"></script>
 
 
 </body>
