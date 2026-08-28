@@ -1,368 +1,574 @@
 <!doctype html>
 <html lang="en">
+
 <head>
-<meta charset="utf-8"/>
-<meta name="viewport" content="width=device-width,initial-scale=1"/>
-<title>INC Roulette</title>
-<link rel="stylesheet" href="/style.css"/>
+  <meta charset="utf-8" />
+
+  <meta
+    name="viewport"
+    content="width=device-width, initial-scale=1"
+  />
+
+  <title>INC Presidential Roulette</title>
+
+  <link
+    rel="stylesheet"
+    href="/style.css"
+  />
 </head>
+
 
 <body>
 
-<div class="bg-orb orb1"></div>
-<div class="bg-orb orb2"></div>
+  <!-- Background -->
 
-<header class="topbar">
-  <div class="brand">
-    <img src="/assets/inc-logo.png"/>
-    <div>
-      <b>INC ROULETTE</b>
-      <span>THE CORPORATE CLUB</span>
-    </div>
-  </div>
+  <div class="bg-orb orb1"></div>
+  <div class="bg-orb orb2"></div>
 
-  <div id="roomBadge" class="room-badge hidden">
-    ROOM <strong id="roomCode"></strong>
-  </div>
-</header>
 
-<main>
+  <!-- =====================================================
+       TOP BAR
+  ====================================================== -->
 
-<section id="landing" class="screen active">
+  <header class="topbar">
 
-  <div class="hero-card">
+    <div class="brand">
 
-    <div class="eyebrow">
-      THE CORPORATE CLUB PRESENTS
-    </div>
-
-    <h1>
-      INC <em>ROULETTE</em>
-    </h1>
-
-    <p>
-      Pick a president. Place your virtual chips. Spin the wheel.
-      <br/>
-      No money. Just chaos.
-    </p>
-
-    <div class="join-grid">
+      <img
+        src="/assets/inc-logo.png"
+        alt="INC"
+      />
 
       <div>
-        <label>YOUR NAME</label>
-        <input
-          id="name"
-          maxlength="18"
-          placeholder="Enter your name"
-        />
-      </div>
 
-      <div>
-        <label>ROOM CODE</label>
-        <input
-          id="joinCode"
-          maxlength="5"
-          placeholder="ABC12"
-        />
+        <b>INC PRESIDENTIAL ROULETTE</b>
+
+        <span>
+          THE CORPORATE CLUB
+        </span>
+
       </div>
 
     </div>
 
-    <div class="actions">
-      <button id="create" class="primary">
-        CREATE ROOM
-      </button>
-
-      <button id="join" class="secondary">
-        JOIN ROOM
-      </button>
-    </div>
-
-    <div id="landingError" class="error"></div>
-
-    <div class="rules">
-      <span>👥 1–5 players</span>
-      <span>🪙 1,000 starting chips</span>
-      <span>🎰 11 wheel slots</span>
-    </div>
-
-  </div>
-
-</section>
-
-
-<section id="lobby" class="screen">
-
-  <div class="lobby-card">
-
-    <div class="eyebrow">
-      ROOM READY
-    </div>
-
-    <h2>
-      Invite the squad.
-    </h2>
-
-    <div class="code-big" id="lobbyCode">
-      -----
-    </div>
-
-    <button
-      class="secondary small"
-      id="copyCode">
-      COPY ROOM CODE
-    </button>
 
     <div
-      class="players"
-      id="lobbyPlayers">
+      id="roomBadge"
+      class="room-badge hidden"
+    >
+
+      ROOM
+
+      <strong id="roomCode">
+        -----
+      </strong>
+
     </div>
 
-    <div class="lobby-actions">
-      <button
-        id="enterGame"
-        class="primary">
-        ENTER ROULETTE →
-      </button>
-    </div>
-
-  </div>
-
-</section>
+  </header>
 
 
-<section id="game" class="screen">
 
-  <div class="game-head">
-
-    <div>
-      <div class="eyebrow">
-        LIVE ROOM
-      </div>
-
-      <h2>
-        Place your bets.
-      </h2>
-    </div>
-
-    <div class="round">
-      ROUND <b id="roundNo">1</b>
-    </div>
-
-  </div>
+  <main>
 
 
-  <div class="game-layout">
+    <!-- ===================================================
+         LANDING
+    ==================================================== -->
 
+    <section
+      id="landing"
+      class="screen active"
+    >
 
-    <!-- PLAYERS -->
+      <div class="hero-card">
 
-    <aside class="panel players-panel">
-
-      <h3>
-        PLAYERS
-        <span id="count">0/5</span>
-      </h3>
-
-      <div id="gamePlayers"></div>
-
-      <div class="history">
-
-        <h3>
-          RECENT WINNERS
-        </h3>
-
-        <div id="history"></div>
-
-      </div>
-
-    </aside>
-
-
-    <!-- WHEEL -->
-
-    <section class="wheel-panel">
-
-      <div class="wheel-wrap">
-
-        <div class="pointer"></div>
-
-        <div
-          id="wheel"
-          class="wheel">
+        <div class="eyebrow">
+          THE CORPORATE CLUB PRESENTS
         </div>
 
-        <div class="wheel-center">
 
-          <img src="/assets/inc-logo.png"/>
+        <h1>
+          INC <em>ROULETTE</em>
+        </h1>
+
+
+        <p>
+          Pick your bet. Place your virtual chips.
+          Spin the wheel.<br />
+          No money. Just chaos.
+        </p>
+
+
+        <div class="join-grid">
+
+          <div>
+
+            <label>
+              YOUR NAME
+            </label>
+
+            <input
+              id="name"
+              maxlength="18"
+              placeholder="Enter your name"
+              autocomplete="off"
+            />
+
+          </div>
+
+
+          <div>
+
+            <label>
+              ROOM CODE
+            </label>
+
+            <input
+              id="joinCode"
+              maxlength="5"
+              placeholder="ABC12"
+              autocomplete="off"
+            />
+
+          </div>
+
+        </div>
+
+
+        <div class="actions">
+
+          <button
+            id="create"
+            class="primary"
+          >
+            CREATE ROOM
+          </button>
+
+
+          <button
+            id="join"
+            class="secondary"
+          >
+            JOIN ROOM
+          </button>
+
+        </div>
+
+
+        <div
+          id="landingError"
+          class="error"
+        ></div>
+
+
+        <div class="rules">
 
           <span>
-            INC
+            👥 1–5 players
+          </span>
+
+          <span>
+            🪙 1,000 starting chips
+          </span>
+
+          <span>
+            🎰 11 wheel slots
           </span>
 
         </div>
 
       </div>
 
-
-      <div
-        id="result"
-        class="result">
-        Choose your bets and spin.
-      </div>
+    </section>
 
 
-      <div class="spin-row">
+
+    <!-- ===================================================
+         LOBBY
+    ==================================================== -->
+
+    <section
+      id="lobby"
+      class="screen"
+    >
+
+      <div class="lobby-card">
+
+        <div class="eyebrow">
+          ROOM READY
+        </div>
+
+
+        <h2>
+          Invite the squad.
+        </h2>
+
+
+        <div
+          class="code-big"
+          id="lobbyCode"
+        >
+          -----
+        </div>
+
 
         <button
-          id="spin"
-          class="spin">
-
-          SPIN THE ROULETTE
-
+          class="secondary small"
+          id="copyCode"
+        >
+          COPY ROOM CODE
         </button>
+
+
+        <div
+          class="players"
+          id="lobbyPlayers"
+        ></div>
+
+
+        <div class="lobby-actions">
+
+          <button
+            id="enterGame"
+            class="primary"
+          >
+            ENTER ROULETTE →
+          </button>
+
+        </div>
 
       </div>
 
     </section>
 
 
-    <!-- BETTING -->
 
-    <aside class="panel bet-panel">
+    <!-- ===================================================
+         GAME
+    ==================================================== -->
 
-      <div class="balance">
-
-        <span>
-          YOUR CHIPS
-        </span>
-
-        <strong id="balance">
-          1,000
-        </strong>
-
-      </div>
+    <section
+      id="game"
+      class="screen"
+    >
 
 
-      <h3>
-        TABLE BETS
-      </h3>
+      <!-- GAME HEADER -->
+
+      <div class="game-head">
+
+        <div>
+
+          <div class="eyebrow">
+            LIVE ROOM
+          </div>
+
+          <h2>
+            Place your bets.
+          </h2>
+
+        </div>
 
 
-      <div class="table-bets">
+        <div class="round">
 
-        <button
-          class="table-bet red-bet"
-          data-bet="RED">
+          ROUND
 
-          <b>♦ RED</b>
-          <small>2× PAYOUT</small>
+          <b id="roundNo">
+            1
+          </b>
 
-        </button>
-
-
-        <button
-          class="table-bet black-bet"
-          data-bet="BLACK">
-
-          <b>♣ BLACK</b>
-          <small>2× PAYOUT</small>
-
-        </button>
-
-
-        <button
-          class="table-bet odd-bet"
-          data-bet="ODD">
-
-          <b>ODD</b>
-          <small>3× PAYOUT</small>
-
-        </button>
-
-
-        <button
-          class="table-bet even-bet"
-          data-bet="EVEN">
-
-          <b>EVEN</b>
-          <small>3× PAYOUT</small>
-
-        </button>
+        </div>
 
       </div>
 
 
-      <h3 class="bet-heading">
-        BET ON A PRESIDENT
-      </h3>
+
+      <!-- =================================================
+           GAME LAYOUT
+      ================================================== -->
+
+      <div class="game-layout">
 
 
-      <div
-        id="betOptions"
-        class="bet-options">
+        <!-- ===============================================
+             PLAYERS
+        ================================================ -->
+
+        <aside
+          class="panel players-panel"
+        >
+
+          <h3>
+
+            PLAYERS
+
+            <span id="count">
+              0/5
+            </span>
+
+          </h3>
+
+
+          <div
+            id="gamePlayers"
+          ></div>
+
+
+          <div class="history">
+
+            <h3>
+              RECENT WINNERS
+            </h3>
+
+
+            <div
+              id="history"
+            ></div>
+
+          </div>
+
+        </aside>
+
+
+
+        <!-- ===============================================
+             WHEEL
+        ================================================ -->
+
+        <section class="wheel-panel">
+
+
+          <div class="wheel-wrap">
+
+
+            <!-- Pointer -->
+
+            <div class="pointer"></div>
+
+
+            <!-- Wheel -->
+
+            <div
+              id="wheel"
+              class="wheel"
+            ></div>
+
+
+            <!-- Center -->
+
+            <div class="wheel-center">
+
+              <img
+                src="/assets/inc-logo.png"
+                alt="INC"
+              />
+
+              <span>
+                INC
+              </span>
+
+            </div>
+
+
+          </div>
+
+
+
+          <!-- Result -->
+
+          <div
+            id="result"
+            class="result"
+          >
+            Choose your bets and spin.
+          </div>
+
+
+          <!-- Spin -->
+
+          <div class="spin-row">
+
+            <button
+              id="spin"
+              class="spin"
+            >
+              SPIN THE ROULETTE
+            </button>
+
+          </div>
+
+
+        </section>
+
+
+
+        <!-- ===============================================
+             BETTING PANEL
+        ================================================ -->
+
+        <aside
+          class="panel bet-panel"
+        >
+
+
+          <!-- BALANCE -->
+
+          <div class="balance">
+
+            <span>
+              YOUR CHIPS
+            </span>
+
+            <strong id="balance">
+              1,000
+            </strong>
+
+          </div>
+
+
+
+          <!-- CATEGORY BETS -->
+
+          <h3>
+            TABLE BETS
+          </h3>
+
+
+          <!--
+            app.js automatically creates:
+
+            RED       2×
+            BLACK     2×
+            ODD       3×
+            EVEN      3×
+          -->
+
+
+
+          <!-- PRESIDENT BETS -->
+
+          <h3 class="bet-heading">
+
+            OR BET ON A PRESIDENT
+
+          </h3>
+
+
+          <div
+            id="betOptions"
+            class="bet-options"
+          ></div>
+
+
+
+          <!-- BET CONTROLS -->
+
+          <div class="bet-controls">
+
+
+            <input
+              id="betAmount"
+              type="number"
+              min="10"
+              step="10"
+              value="50"
+              inputmode="numeric"
+            />
+
+
+            <button
+              id="betBtn"
+              class="primary small"
+            >
+              PLACE BET
+            </button>
+
+
+            <button
+              id="clearBtn"
+              class="ghost small"
+            >
+              CLEAR
+            </button>
+
+
+          </div>
+
+
+
+          <!-- TOTAL STAKED -->
+
+          <div class="bet-slip">
+
+            <span>
+              TOTAL STAKED
+            </span>
+
+            <b id="staked">
+              0
+            </b>
+
+          </div>
+
+
+
+          <!-- PAYOUT INFO -->
+
+          <p class="tiny">
+
+            🔴 RED — 2×<br />
+
+            ⚫ BLACK — 2×<br />
+
+            ODD — 3×<br />
+
+            EVEN — 3×<br />
+
+            PRESIDENT — 10×<br />
+
+            🟢 WILD CARD — 15×<br /><br />
+
+            Payouts are revealed only
+            after the wheel finishes spinning.
+
+          </p>
+
+
+        </aside>
+
+
       </div>
 
+    </section>
 
-      <div class="bet-controls">
-
-        <input
-          id="betAmount"
-          type="number"
-          min="10"
-          step="10"
-          value="50"
-        />
-
-        <button
-          id="betBtn"
-          class="primary small">
-
-          PLACE BET
-
-        </button>
-
-        <button
-          id="clearBtn"
-          class="ghost small">
-
-          CLEAR
-
-        </button>
-
-      </div>
+  </main>
 
 
-      <div class="bet-slip">
 
-        <span>
-          TOTAL STAKED
-        </span>
+  <!-- Toast -->
 
-        <b id="staked">
-          0
-        </b>
-
-      </div>
+  <div
+    id="toast"
+  ></div>
 
 
-      <p class="tiny">
-        RED/BLACK 2× • ODD/EVEN 3× •
-        PRESIDENT 10× • WILD CARD 15×
-      </p>
 
-    </aside>
+  <!-- Socket.IO -->
 
-  </div>
+  <script
+    src="/socket.io/socket.io.js"
+  ></script>
 
-</section>
 
-</main>
+  <!-- Game -->
 
-<div id="toast"></div>
+  <script
+    src="/app.js"
+  ></script>
 
-<script src="/socket.io/socket.io.js"></script>
-<script src="/app.js"></script>
 
 </body>
+
 </html>
